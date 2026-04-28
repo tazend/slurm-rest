@@ -74,7 +74,8 @@ pub fn getJob(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(
 
 pub fn getJobScript(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.string) {
     const id = try std.fmt.parseInt(u32, req.param("id").?, 10);
-    return .{ .data = try slurm.job.getBatchScript(res.arena, id) };
+    const script = try slurm.job.getBatchScript(res.arena, id);
+    return .{ .data = try json(res.arena, script) };
 }
 
 pub fn getNodes(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
