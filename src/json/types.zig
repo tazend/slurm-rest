@@ -94,11 +94,16 @@ pub const WCKeyList: SlurmType = .{
     .serializer = ser.list,
 };
 
+pub const CoordinatorList: SlurmType = .{
+    .typ = slurm.db.List(*slurm.db.Coordinator),
+    .serializer = ser.list,
+};
+
 pub const User: SlurmType = .{
     .typ = slurm.db.User,
     .options = &.{
         .{ .name = "wckey_list", .new_name = "wckeys" },
-        .{ .name = "coord_accts", .new_name = "coordinators", .serializer = ser.noop },
+        .{ .name = "coord_accts", .new_name = "coordinators", },
         .{ .name = "assoc_list", .new_name = "associations", .serializer = ser.assocsShort },
         .{ .name = "def_qos_id", .new_name = "default_qos" },
     },
@@ -108,6 +113,13 @@ pub const WCKey: SlurmType = .{
     .typ = slurm.db.WCKey,
     .options = &.{
         .{ .name = "accounting_list", .serializer = ser.noop },
+    },
+};
+
+pub const Coordinator: SlurmType = .{
+    .typ = slurm.db.Coordinator,
+    .options = &.{
+        .{ .name = "direct", .serializer = ser.bool },
     },
 };
 
