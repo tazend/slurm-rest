@@ -173,6 +173,25 @@ pub fn jobMemoryTotal(s: *Stringify, instance: anytype, field: anytype, opts: an
     try numberRaw(s, value, opts);
 }
 
+pub fn nodeNextState(s: *Stringify, instance: *const slurm.Node, field: anytype, _: anytype) !void {
+    const state = if (@as(u32, @bitCast(instance.next_state)) != slurm.common.NoValue.u32)
+        @tagName(instance.next_state.base)
+    else
+        null;
+    try json.write(s, state, field.json_key);
+}
+
+pub fn nodeIdleCpus(s: *Stringify, instance: *slurm.Node, field: anytype, _: anytype) !void {
+    const util = instance.utilization();
+    try json.write(s, util.idle_cpus, field.json_key);
+}
+
+pub fn timestampRaw(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {
+    const value = @field(instance, field.name);
+    const time = if (value != 0) value else null;
+    try json.write(s, time, field.json_key);
+}
+
 pub fn loadResponse(s: *Stringify, instance: anytype, _: anytype, _: anytype) !void {
     try s.beginArray();
     var iter = instance.iter();
@@ -187,10 +206,12 @@ pub const DefaultOptions = struct {
 };
 
 pub fn memberDefault(s: *Stringify, instance: anytype, field: anytype, opts: anytype) !void {
-    _ = opts;
-
+    if (field.type == std.posix.time_t) {
+        try timestampRaw(s, instance, field, opts);
+        return;
+    }
     const value = @field(instance, field.name);
-
+    try json.write(s, value, field.json_key);
 //  switch (@typeInfo(field.type)) {
 //      .int => |info| {
 //          switch (info.signedness) {
@@ -203,7 +224,6 @@ pub fn memberDefault(s: *Stringify, instance: anytype, field: anytype, opts: any
 //      },
 //      else => {},
 //  }
-    try json.write(s, value, field.json_key);
 }
 
 pub fn default(s: *Stringify, instance: anytype, _: anytype, _: anytype) !void {

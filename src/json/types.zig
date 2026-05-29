@@ -78,10 +78,34 @@ pub const Node: SlurmType = .{
         .{ .name = "owner", .serializer = ser.numberFlat },
         .{ .name = "reason_uid", .serializer = ser.numberFlat },
         .{ .name = "resv_name", .new_name = "reservation" },
+        // INFO: Can it really be NO_VAL64?
         .{ .name = "free_mem", .new_name = "free_memory" },
         .{ .name = "node_hostname", .new_name = "hostname" },
         .{ .name = "node_addr", .new_name = "address" },
+        // TODO:
+        //  .{ .name = "cpu_bind" },
+        //  .{ .name = "cpu_spec_list", .new_name = "specialized_cpus" },
+        //  .{ .name = "energy" },
+
+        // TODO: Proper GRES Parsing into Dict
+        .{ .name = "gres", .serializer = ser.array },
+        .{ .name = "gres_used", .serializer = ser.array },
+        // TODO: Handle "N/A"
+        .{ .name = "gres_drain", .new_name = "gres_drained", .serializer = ser.dict },
+
+        .{ .name = "mem_spec_limit", .new_name = "specialized_memory" },
+        .{ .name = "next_state", .new_name = "next_state_after_reboot", .serializer = ser.nodeNextState },
+        .{ .name = "os", .new_name = "operating_system" },
+
+        // TODO: Get the proper user name
+        .{ .name = "reason_uid", .new_name = "reason_user" },
+
+        .{ .name = "tmp_disk", .new_name = "temporary_disk" },
+        .{ .name = "topology_str", .new_name = "topology" },
     },
+    .extra_members = &.{
+        .{ .name = "idle_cpus", .serializer = ser.nodeIdleCpus },
+    }
 };
 
 pub const UserList: SlurmType = .{
