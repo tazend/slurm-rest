@@ -16,7 +16,7 @@ pub fn build(b: *std.Build) void {
         .root_module = exe_mod,
     });
 
-    slurm.setupSlurmPath(b, exe);
+    try slurm.setupSlurmPath(b, exe);
     const slurm_dep = b.dependency("slurm", .{
         .target = target,
         .optimize = optimize,
