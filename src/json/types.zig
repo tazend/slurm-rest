@@ -82,30 +82,33 @@ pub const Node: SlurmType = .{
         .{ .name = "free_mem", .new_name = "free_memory" },
         .{ .name = "node_hostname", .new_name = "hostname" },
         .{ .name = "node_addr", .new_name = "address" },
-        // TODO:
-        //  .{ .name = "cpu_bind" },
-        //  .{ .name = "cpu_spec_list", .new_name = "specialized_cpus" },
-        //  .{ .name = "energy" },
+        .{ .name = "cpu_spec_list", .new_name = "specialized_cpu_ids", .serializer = ser.arrayInt },
+        .{ .name = "energy", .serializer = ser.container },
 
         // TODO: Proper GRES Parsing into Dict
-        .{ .name = "gres", .serializer = ser.array },
+        .{ .name = "gres", .serializer = ser.gresDict },
         .{ .name = "gres_used", .serializer = ser.array },
-        // TODO: Handle "N/A"
-        .{ .name = "gres_drain", .new_name = "gres_drained", .serializer = ser.dict },
+        .{ .name = "gres_drain", .new_name = "gres_drained", .serializer = ser.gresDict },
 
         .{ .name = "mem_spec_limit", .new_name = "specialized_memory" },
         .{ .name = "next_state", .new_name = "next_state_after_reboot", .serializer = ser.nodeNextState },
         .{ .name = "os", .new_name = "operating_system" },
 
-        // TODO: Get the proper user name
-        .{ .name = "reason_uid", .new_name = "reason_user" },
-
+        .{ .name = "reason_uid", .new_name = "reason_uid" },
         .{ .name = "tmp_disk", .new_name = "temporary_disk" },
         .{ .name = "topology_str", .new_name = "topology" },
     },
     .extra_members = &.{
         .{ .name = "idle_cpus", .serializer = ser.nodeIdleCpus },
+        .{ .name = "reason_user", .serializer = ser.nodeReasonUser },
     }
+};
+
+pub const AccountingGatherEnergy: SlurmType = .{
+    .typ = slurm.AccountingGatherEnergy,
+    .options = &.{
+        .{ .name = "slurmd_start_time", .serializer = ser.noop },
+    },
 };
 
 pub const UserList: SlurmType = .{
@@ -173,8 +176,11 @@ pub const Reservation: SlurmType = .{
     .typ = slurm.Reservation,
     .options = &.{
         .{ .name = "node_inx", .serializer = ser.noop },
+        .{ .name = "core_spec_cnt", .serializer = ser.noop },
+        .{ .name = "core_spec", .new_name = "specialized_cores", .serializer = ser.resCoreSpec },
         .{ .name = "tres_str", .new_name = "tres", .serializer = ser.dict },
-        .{ .name = "node_list", .new_name = "nodes", .serializer = ser.array },
+        .{ .name = "node_cnt", .new_name = "node_count" },
+        .{ .name = "node_list", .new_name = "nodes" },
         .{ .name = "licenses", .serializer = ser.array },
         .{ .name = "groups", .serializer = ser.array },
         .{ .name = "features", .serializer = ser.array },
@@ -223,18 +229,20 @@ pub const Job: SlurmType = .{
         .{ .name = "licenses", .serializer = ser.array },
         .{ .name = "licenses_allocated", .serializer = ser.array },
         // TODO: boolNoValue
-        // .{ .name = "oom_kill_step", .serializer = ser.numberFlatNoValue },
+        // .{ .name = "oom_kill_step", .serializer = ser.boolNoValue },
         .{ .name = "ntasks_per_core", .serializer = ser.number },
         .{ .name = "ntasks_per_tres", .serializer = ser.number },
         .{ .name = "ntasks_per_node", .serializer = ser.number },
         .{ .name = "ntasks_per_socket", .serializer = ser.number },
         .{ .name = "ntasks_per_board", .serializer = ser.number },
         .{ .name = "sockets_per_node", .serializer = ser.number },
-        .{ .name = "sockets_per_board", .serializer = ser.number, .serializer_args = &NumberOptions{ .zero_is_noval = true } },
+        .{ .name = "sockets_per_board", .serializer = ser.numberNoValue},
         .{ .name = "gres_detail_str", .new_name = "gres_detail", .serializer = ser.noop }, // TODO
-        .{ .name = "pn_min_cpus", .new_name = "min_cpus_per_node", .serializer = ser.number, .serializer_args = &NumberOptions{ .zero_is_noval = true } },
-        .{ .name = "max_cpus", .serializer = ser.number, .serializer_args = &NumberOptions{ .zero_is_noval = true } },
-        .{ .name = "time_min", .serializer = ser.number, .serializer_args = &NumberOptions{ .zero_is_noval = true } },
+        .{ .name = "pn_min_cpus", .new_name = "min_cpus_per_node", .serializer = ser.numberNoValue },
+        .{ .name = "max_cpus", .serializer = ser.numberNoValue },
+        .{ .name = "time_min", .serializer = ser.numberNoValue },
+        .{ .name = "user_name", .serializer = ser.jobUserName },
+        .{ .name = "std_out", .serializer = ser.jobStdOut },
     },
     .extra_members = &.{
             .{ .name = "memory_total", .serializer = ser.jobMemoryTotal },
@@ -247,6 +255,15 @@ pub const Partition: SlurmType = .{
         .{ .name = "node_inx", .serializer = ser.noop },
         .{ .name = "job_defaults_list", .serializer = ser.noop },
         .{ .name = "deny_accounts", .serializer = ser.array, },
+        .{ .name = "job_defaults_str", .new_name = "job_defaults", },
+        .{ .name = "suspend_timeout", .serializer = ser.number, },
+        // TODO: Needs parsing
+        .{ .name = "def_mem_per_cpu", .serializer = ser.number, },
+        .{ .name = "max_cpus_per_node", .serializer = ser.number, },
+        .{ .name = "max_cpus_per_socket", .serializer = ser.number, },
+        .{ .name = "max_nodes", .serializer = ser.number, },
+        .{ .name = "resume_timeout", .serializer = ser.number, },
+        .{ .name = "over_time_limit", .serializer = ser.number, },
         .{ .name = "allow_accounts", .serializer = ser.array, },
         .{ .name = "allow_alloc_nodes", .serializer = ser.array, },
         .{ .name = "allow_groups", .serializer = ser.array, },
@@ -254,6 +271,7 @@ pub const Partition: SlurmType = .{
         .{ .name = "deny_qos", .serializer = ser.array, },
         .{ .name = "qos_char", .new_name = "assigned_qos" },
         .{ .name = "tres_fmt_str", .new_name = "configured_tres", .serializer = ser.dict },
+        .{ .name = "billing_weights_str", .new_name = "tres_billing_weights", .serializer = ser.dict },
     },
 };
 
@@ -278,6 +296,6 @@ pub const JobResponse: SlurmType = .{
 };
 
 pub const JobResources: SlurmType = .{
-    .typ = slurm.job.JobResources,
+    .typ = slurm.Job.Resources,
     .serializer = ser.noop,
 };

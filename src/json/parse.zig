@@ -1,4 +1,5 @@
 const std = @import("std");
+const uidToNameBuf = @import("../util.zig").uidToNameBuf;
 const mem = std.mem;
 const slurm = @import("slurm");
 const Stringify = std.json.Stringify;
@@ -30,29 +31,87 @@ pub fn dict(s: *Stringify, instance: anytype, field: anytype, opts: anytype) !vo
         return;
     };
 
+    if (std.mem.eql(u8, "N/A", buf)) {
+        try s.print("{{}}", .{});
+        return;
+    }
+
     try s.beginObject();
     var it_outer = std.mem.splitScalar(u8, buf, options.sep1);
     while (it_outer.next()) |item| {
         var it_inner = std.mem.splitScalar(u8, item, options.sep2);
         const key = it_inner.first();
         const val = it_inner.rest();
+        const val_num = std.fmt.parseInt(u128, val, 10) catch null;
 
         try s.objectField(key);
-        try s.write(val);
+        if (val_num) |v| {
+            try s.write(v);
+        } else try s.write(val);
     }
     try s.endObject();
 }
 
-pub fn @"bool"(s: *Stringify, instance: anytype, field: anytype, opts: anytype) !void {
-    _ = opts;
+pub fn @"bool"(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {
     const field_value = @field(instance, field.name);
     try s.objectField(field.json_key);
     if (field_value == 0) try s.write(false) else try s.write(true);
 }
 
+pub fn gresDict(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {
+    const value = @field(instance, field.name);
+    try s.objectField(field.json_key);
+
+    const buf = slurm.parseCStrZ(value) orelse {
+        try s.print("{{}}", .{});
+        return;
+    };
+
+    if (std.mem.eql(u8, "N/A", buf)) {
+        try s.print("{{}}", .{});
+        return;
+    }
+
+    var it = std.mem.splitScalar(u8, buf, ',');
+    try s.beginObject();
+    while (it.next()) |item| {
+        var it_inner = std.mem.splitBackwardsScalar(u8, item, ':');
+        const count = it_inner.first();
+        const key = it_inner.rest();
+
+        try s.objectField(key);
+        try s.write(count);
+    }
+    try s.endObject();
+}
+
+pub fn resCoreSpec(s: *Stringify, instance: *slurm.Reservation, field: anytype, _: anytype) !void {
+    try s.objectField(field.json_key);
+    if (instance.core_spec_cnt == slurm.common.NoValue.u32 or instance.core_spec == null) {
+        try s.print("[]", .{});
+        return;
+    }
+
+    try s.beginArray();
+    for (0..instance.core_spec_cnt) |i| {
+        const spec = instance.core_spec.?[i];
+        const name = slurm.parseCStr(spec.node_name) orelse continue;
+        const id = slurm.parseCStr(spec.core_id) orelse continue;
+
+        try s.beginObject();
+        try s.objectField("name");
+        try s.write(name);
+        try s.objectField("id");
+        try s.write(id);
+        try s.endObject();
+    }
+    try s.endArray();
+}
+
 
 const ArrayOptions = struct {
     sep: u8 = ',',
+    numbers: bool = false,
 };
 
 pub fn array(s: *Stringify, instance: anytype, field: anytype, opts: anytype) !void {
@@ -75,10 +134,22 @@ pub fn array(s: *Stringify, instance: anytype, field: anytype, opts: anytype) !v
     try s.beginArray();
     var it = std.mem.splitScalar(u8, buf, options.sep);
     while (it.next()) |item| {
-        try s.write(item);
+        switch (options.numbers) {
+            true => {
+                const v = std.fmt.parseInt(u64, item, 10) catch continue;
+                try s.write(v);
+            },
+            false => try s.write(item),
+        }
     }
     try s.endArray();
 }
+
+pub fn arrayInt(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {
+    const opts: ?*const anyopaque = &ArrayOptions{ .numbers = true };
+    return array(s, instance, field, opts);
+}
+
 
 fn Number(comptime T: type) type {
     return struct {
@@ -128,6 +199,11 @@ pub fn number(s: *Stringify, instance: anytype, field: anytype, opts: anytype) !
 
 pub fn numberFlat(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {
     const opts: ?*const anyopaque = &NumberOptions{ .flat = true };
+    return number(s, instance, field, opts);
+}
+
+pub fn numberNoValue(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {
+    const opts: ?*const anyopaque = &NumberOptions{ .zero_is_noval = true };
     return number(s, instance, field, opts);
 }
 
@@ -186,6 +262,35 @@ pub fn nodeIdleCpus(s: *Stringify, instance: *slurm.Node, field: anytype, _: any
     try json.write(s, util.idle_cpus, field.json_key);
 }
 
+pub fn nodeReasonUser(s: *Stringify, instance: *slurm.Node, field: anytype, _: anytype) !void {
+    var buf: [std.c.NAME_MAX]u8 = undefined;
+    try json.write(s, try uidToNameBuf(&buf, instance.reason_uid), field.json_key);
+}
+
+pub fn jobUserName(s: *Stringify, instance: *slurm.Job, field: anytype, _: anytype) !void {
+    var buf: [std.c.NAME_MAX]u8 = undefined;
+    try json.write(s, try uidToNameBuf(&buf, instance.user_id), field.json_key);
+}
+
+pub fn jobStdOut(s: *Stringify, instance: *slurm.Job, field: anytype, _: anytype) !void {
+    // TODO: Do we need to allocate? Or is this fine once the value is written?
+    var buf: [std.c.PATH_MAX]u8 = undefined;
+    const value = instance.stdoutBuf(&buf) catch null;
+    try json.write(s, value, field.json_key);
+}
+
+pub fn jobStdErr(s: *Stringify, instance: *slurm.Job, field: anytype, _: anytype) !void {
+    var buf: [std.c.PATH_MAX]u8 = undefined;
+    const value = instance.stderrBuf(&buf) catch null;
+    try json.write(s, value, field.json_key);
+}
+
+pub fn jobStdIn(s: *Stringify, instance: *slurm.Job, field: anytype, _: anytype) !void {
+    var buf: [std.c.PATH_MAX]u8 = undefined;
+    const value = instance.stdinBuf(&buf) catch null;
+    try json.write(s, value, field.json_key);
+}
+
 pub fn timestampRaw(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {
     const value = @field(instance, field.name);
     const time = if (value != 0) value else null;
@@ -241,7 +346,7 @@ pub fn container(s: *Stringify, instance: anytype, _: anytype, typ: anytype) !vo
 
     try s.beginObject();
 
-    const T = @TypeOf(instance.*);
+    const T = types.baseType(@TypeOf(instance));
     const fields = @typeInfo(T).@"struct".fields;
     inline for (fields) |field| {
         const option: types.SlurmType.Option = comptime blk: {
@@ -261,7 +366,17 @@ pub fn container(s: *Stringify, instance: anytype, _: anytype, typ: anytype) !vo
             .@"type" = field.type,
         };
 
-        try option.serializer(s, instance, f, option.serializer_args);
+        if (option.serializer == container) {
+            // TODO: Also support non-optionals
+            if (@field(instance, f.name)) |v| {
+                try json.write(s, v, f.json_key);
+            } else {
+                try json.write(s, null, f.json_key);
+            }
+        } else {
+            try option.serializer(s, instance, f, option.serializer_args);
+        }
+
     }
 
     inline for (typ.extra_members) |extra_member| {
