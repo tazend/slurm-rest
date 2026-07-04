@@ -53,30 +53,49 @@ pub fn getQueueSummary(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Re
     return .{ .data = try json(res.arena, queue_summary.items) };
 }
 
-pub fn deleteJob(_: *Handler, req: *httpz.Request, _: *httpz.Response) !Response(.null) {
-    const id = try std.fmt.parseInt(u32, req.param("id").?, 10);
-    _ = try slurm.job.cancel(id);
-    return .{};
-}
+pub const Job = struct {
 
-pub fn getJobs(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
-    const resp = try slurm.job.load();
-    defer resp.deinit();
-    return .{ .data = try json(res.arena, resp), };
-}
+    pub fn getSteps(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.array) {
+        const id = req.param("id").?;
+        const resp = try slurm.step.loadForJob(try std.fmt.parseInt(u32, id, 10));
+        defer resp.deinit();
+        return .{ .data = try json(res.arena, resp) };
+    }
 
-pub fn getJob(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.object) {
-    const id = req.param("id").?;
-    var job = try slurm.job.loadOne(try std.fmt.parseInt(u32, id, 10));
-    defer job.deinit();
-    return .{ .data = try json(res.arena, &job) };
-}
+    pub fn getOne(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.object) {
+        const id = req.param("id").?;
+        var job = try slurm.job.loadOne(try std.fmt.parseInt(u32, id, 10));
+        defer job.deinit();
+        return .{ .data = try json(res.arena, &job) };
+    }
 
-pub fn getJobScript(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.string) {
-    const id = try std.fmt.parseInt(u32, req.param("id").?, 10);
-    const script = try slurm.job.getBatchScript(res.arena, id);
-    return .{ .data = try json(res.arena, script) };
-}
+    pub fn get(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
+        const resp = try slurm.job.load();
+        defer resp.deinit();
+        return .{ .data = try json(res.arena, resp), };
+    }
+
+    pub fn delete(_: *Handler, req: *httpz.Request, _: *httpz.Response) !Response(.null) {
+        const id = try std.fmt.parseInt(u32, req.param("id").?, 10);
+        _ = try slurm.job.cancel(id);
+        return .{};
+    }
+
+    pub fn getScript(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.string) {
+        const id = try std.fmt.parseInt(u32, req.param("id").?, 10);
+        const script = try slurm.job.getBatchScript(res.arena, id);
+        return .{ .data = try json(res.arena, script) };
+    }
+};
+
+pub const Step = struct {
+
+    pub fn get(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
+        const resp = try slurm.step.load();
+        defer resp.deinit();
+        return .{ .data = try json(res.arena, resp), };
+    }
+};
 
 pub fn getNodes(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
     const resp = try slurm.node.load();
@@ -150,6 +169,33 @@ pub const SlurmController = struct {
     pub fn reconfigure(_: *Handler, _: *httpz.Request, _: *httpz.Response) !Response(.null) {
         try slurm.slurmctld.reconfigure();
         return .{};
+    }
+};
+
+pub const DatabaseJobs = struct {
+
+    pub fn get(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
+        const conn: *slurm.db.Connection = try .open();
+        const filter: slurm.db.Job.Filter = .{};
+        const jobs = try slurm.db.job.load(conn, filter);
+        return .{ .data = try json(res.arena, jobs)};
+    }
+
+    pub fn getOne(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.object) {
+        const conn: *slurm.db.Connection = try .open();
+        const id = try std.fmt.parseInt(u32, req.param("id").?, 10);
+        const job = try slurm.db.job.loadOne(conn, id);
+        return .{ .data = try json(res.arena, job)};
+    }
+};
+
+pub const DatabaseAccounts = struct {
+
+    pub fn get(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
+        const conn: *slurm.db.Connection = try .open();
+        const filter: slurm.db.Account.Filter = .{};
+        const resp = try slurm.db.account.load(conn, filter);
+        return .{ .data = try json(res.arena, resp)};
     }
 };
 
