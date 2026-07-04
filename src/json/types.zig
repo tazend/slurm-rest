@@ -31,7 +31,36 @@ pub fn find(comptime T: type) SlurmType {
             return field;
         }
     }
-    return .default;
+
+    const ChildInfo = @typeInfo(Child);
+
+    // If we didn't find any specific Override, check if this is a List.
+    // This way, we don't need to configure every possible List(T) combination
+    if (ChildInfo == .@"opaque") {
+        if (@hasDecl(Child, "ItemType")) {
+            return .{
+                .typ = Child,
+                .serializer = ser.list,
+            };
+        }
+        // If we didn't detect a list, we likely just don't want to parse
+        // opaque types
+        return .{
+            .typ = Child,
+            .serializer = ser.noop,
+        };
+    } else if (ChildInfo == .@"struct"
+            and std.mem.containsAtLeast(u8, @typeName(Child), 1, "LoadResponse")) {
+        return .{
+            .typ = Child,
+            .serializer = ser.loadResponse,
+        } ;
+    }
+
+    return .{
+        .typ = Child,
+        .serializer = ser.default,
+    };
 }
 
 pub const Serialize = *const fn(*Stringify, anytype, anytype, anytype) anyerror!void;
@@ -49,11 +78,6 @@ pub const SlurmType = struct {
         new_name: ?[:0]const u8 = null,
         serializer: Serialize = ser.memberDefault,
         serializer_args: ?*const anyopaque = null,
-    };
-
-    pub const default: SlurmType = .{
-        .typ = undefined,
-        .serializer = ser.default,
     };
 };
 
@@ -100,7 +124,7 @@ pub const Node: SlurmType = .{
     },
     .extra_members = &.{
         .{ .name = "idle_cpus", .serializer = ser.nodeIdleCpus },
-        .{ .name = "reason_user", .serializer = ser.nodeReasonUser },
+        .{ .name = "reason_user", .serializer = ser.userName("reason_uid") },
     }
 };
 
@@ -109,21 +133,6 @@ pub const AccountingGatherEnergy: SlurmType = .{
     .options = &.{
         .{ .name = "slurmd_start_time", .serializer = ser.noop },
     },
-};
-
-pub const UserList: SlurmType = .{
-    .typ = slurm.db.List(*slurm.db.User),
-    .serializer = ser.list,
-};
-
-pub const WCKeyList: SlurmType = .{
-    .typ = slurm.db.List(*slurm.db.WCKey),
-    .serializer = ser.list,
-};
-
-pub const CoordinatorList: SlurmType = .{
-    .typ = slurm.db.List(*slurm.db.Coordinator),
-    .serializer = ser.list,
 };
 
 pub const User: SlurmType = .{
@@ -143,10 +152,80 @@ pub const WCKey: SlurmType = .{
     },
 };
 
+pub const DBJob: SlurmType = .{
+    .typ = slurm.db.Job,
+    .options = &.{
+        .{ .name = "first_step_ptr", .serializer = ser.noop },
+    },
+};
+
+pub const DBStep: SlurmType = .{
+    .typ = slurm.db.Step,
+    .options = &.{
+        .{ .name = "job_ptr", .serializer = ser.noop },
+    },
+};
+
+pub const Association: SlurmType = .{
+    .typ = slurm.db.Association,
+    .options = &.{
+        .{ .name = "assoc_next", .serializer = ser.noop },
+        .{ .name = "assoc_next_id", .serializer = ser.noop },
+        .{ .name = "user_rec", .serializer = ser.noop },
+        .{ .name = "accounting_list", .serializer = ser.noop },
+        .{ .name = "max_tres_mins_ctld", .serializer = ser.noop },
+        .{ .name = "max_tres_run_mins_ctld", .serializer = ser.noop },
+        .{ .name = "max_tres_ctld", .serializer = ser.noop },
+        .{ .name = "max_tres_pn_ctld", .serializer = ser.noop },
+        .{ .name = "grp_tres_ctld", .serializer = ser.noop },
+        .{ .name = "grp_tres_mins_ctld", .serializer = ser.noop },
+        .{ .name = "grp_tres_run_mins_ctld", .serializer = ser.noop },
+        .{ .name = "usage", .serializer = ser.noop },
+        .{ .name = "leaf_usage", .serializer = ser.noop },
+    },
+};
+
+pub const Account: SlurmType = .{
+    .typ = slurm.db.Account,
+    .options = &.{
+//        .{ .name = "assoc_list", .serializer = ser.noop },
+    },
+};
+
 pub const Coordinator: SlurmType = .{
     .typ = slurm.db.Coordinator,
     .options = &.{
         .{ .name = "direct", .serializer = ser.bool },
+    },
+};
+
+pub const Step: SlurmType = .{
+    .typ = slurm.Step,
+    .options = &.{
+        .{ .name = "node_inx", .serializer = ser.noop },
+        .{ .name = "time_limit", .serializer = ser.number },
+        .{ .name = "std_out", .serializer = ser.stdio("std_out") },
+        .{ .name = "std_err", .serializer = ser.stdio("std_err") },
+        .{ .name = "std_in", .serializer = ser.stdio("std_in") },
+        .{ .name = "tres_fmt_alloc_str", .new_name = "tres", .serializer = ser.dict },
+        .{ .name = "tres_per_task", .serializer = ser.dict },
+        .{ .name = "tres_per_step", .serializer = ser.dict },
+        .{ .name = "tres_per_node", .serializer = ser.dict },
+        .{ .name = "tres_per_socket", .serializer = ser.dict },
+        .{ .name = "cpus_per_tres", .serializer = ser.dict },
+        .{ .name = "array_job_id", .serializer = ser.numberFlatNoValue },
+        .{ .name = "array_task_id", .serializer = ser.numberFlat },
+    },
+    .extra_members = &.{
+        .{ .name = "user_name", .serializer = ser.userName("user_id") },
+    }
+};
+
+pub const StepID: SlurmType = .{
+    .typ = slurm.Step.ID,
+    .options = &.{
+        .{ .name = "sluid", .serializer = ser.sluid },
+        .{ .name = "step_id", .serializer = ser.stepIDString },
     },
 };
 
@@ -241,8 +320,10 @@ pub const Job: SlurmType = .{
         .{ .name = "pn_min_cpus", .new_name = "min_cpus_per_node", .serializer = ser.numberNoValue },
         .{ .name = "max_cpus", .serializer = ser.numberNoValue },
         .{ .name = "time_min", .serializer = ser.numberNoValue },
-        .{ .name = "user_name", .serializer = ser.jobUserName },
-        .{ .name = "std_out", .serializer = ser.jobStdOut },
+        .{ .name = "user_name", .serializer = ser.userName("user_id") },
+        .{ .name = "std_out", .serializer = ser.stdio("std_out") },
+        .{ .name = "std_err", .serializer = ser.stdio("std_err") },
+        .{ .name = "std_in", .serializer = ser.stdio("std_in") },
     },
     .extra_members = &.{
             .{ .name = "memory_total", .serializer = ser.jobMemoryTotal },
@@ -273,29 +354,4 @@ pub const Partition: SlurmType = .{
         .{ .name = "tres_fmt_str", .new_name = "configured_tres", .serializer = ser.dict },
         .{ .name = "billing_weights_str", .new_name = "tres_billing_weights", .serializer = ser.dict },
     },
-};
-
-pub const ReservationResponse: SlurmType = .{
-    .typ = slurm.Reservation.LoadResponse,
-    .serializer = ser.loadResponse,
-};
-
-pub const PartitionResponse: SlurmType = .{
-    .typ = slurm.Partition.LoadResponse,
-    .serializer = ser.loadResponse,
-};
-
-pub const NodeResponse: SlurmType = .{
-    .typ = slurm.Node.LoadResponse,
-    .serializer = ser.loadResponse,
-};
-
-pub const JobResponse: SlurmType = .{
-    .typ = slurm.Job.LoadResponse,
-    .serializer = ser.loadResponse,
-};
-
-pub const JobResources: SlurmType = .{
-    .typ = slurm.Job.Resources,
-    .serializer = ser.noop,
 };
