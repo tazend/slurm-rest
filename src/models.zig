@@ -34,7 +34,7 @@ pub fn Response(comptime T: json.Type) type {
         data: ?[]const u8 = DefaultValue,
         @"type": json.Type = T,
 
-        pub const DefaultValue = switch(T) {
+        pub const DefaultValue: ?[]const u8 = switch(T) {
             .array => "[]",
             .string => "",
             .object => "{}",
@@ -48,9 +48,14 @@ pub fn Response(comptime T: json.Type) type {
             try jw.write(self.@"error");
             try jw.objectField("meta");
             try jw.write(self.meta);
-
             try jw.objectField("data");
-            try jw.print("{?s}", .{self.data});
+            const data = if (self.data) |d|
+                // If for some reason our data is valid but empty, write the
+                // DefaultValue instead.
+                if (d.len == 0) DefaultValue else d
+            else
+                null;
+            try jw.print("{?s}", .{data});
             try jw.endObject();
         }
     };
