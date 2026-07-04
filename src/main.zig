@@ -30,10 +30,12 @@ pub fn main() !void {
     api_routes.get("/partitions", route.handler(api.getPartitions), .{});
     api_routes.get("/nodes/:name", route.handler(api.getNode), .{});
     api_routes.get("/nodes", route.handler(api.getNodes), .{});
-    api_routes.get("/jobs/:id/script", route.handler(api.getJobScript), .{});
-    api_routes.get("/jobs/:id", route.handler(api.getJob), .{});
-    api_routes.delete("/jobs/:id", route.handler(api.deleteJob), .{});
-    api_routes.get("/jobs", route.handler(api.getJobs), .{});
+    api_routes.get("/jobs/:id/script", route.handler(api.Job.getScript), .{});
+    api_routes.get("/jobs/:id/steps", route.handler(api.Job.getSteps), .{});
+    api_routes.get("/jobs/:id", route.handler(api.Job.getOne), .{});
+    api_routes.delete("/jobs/:id", route.handler(api.Job.delete), .{});
+    api_routes.get("/jobs", route.handler(api.Job.get), .{});
+    api_routes.get("/steps", route.handler(api.Step.get), .{});
     api_routes.get("/queue", route.handler(api.getQueueSummary), .{});
     api_routes.get("/reservations", route.handler(api.Reservation.get), .{});
     api_routes.get("/reservations/:name", route.handler(api.Reservation.getOne), .{});
@@ -41,6 +43,9 @@ pub fn main() !void {
     api_routes.get("/slurmctld/reconfigure", route.handler(api.SlurmController.reconfigure), .{});
 
     api_routes.get("/db/users", route.handler(api.DatabaseUsers.get), .{});
+    api_routes.get("/db/jobs", route.handler(api.DatabaseJobs.get), .{});
+    api_routes.get("/db/jobs/:id", route.handler(api.DatabaseJobs.getOne), .{});
+    api_routes.get("/db/accounts", route.handler(api.DatabaseAccounts.get), .{});
 
     try server.listen();
 }
