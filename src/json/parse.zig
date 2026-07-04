@@ -218,6 +218,12 @@ pub fn jobMemory(s: *Stringify, instance: anytype, field: anytype, opts: anytype
     try numberRaw(s, value, opts);
 }
 
+pub fn stepIDString(s: *Stringify, instance: slurm.Step.ID, field: anytype, _: anytype) !void {
+    var buf: [128]u8 = undefined;
+    const value = instance.toStrBuf(&buf) catch null;
+    try json.write(s, value, field.json_key);
+}
+
 pub fn assocShort(s: *Stringify, assoc: *slurm.db.Association) !void {
     const assoc_short: types.AssociationShort = .{
         .account = assoc.acct,
@@ -262,32 +268,32 @@ pub fn nodeIdleCpus(s: *Stringify, instance: *slurm.Node, field: anytype, _: any
     try json.write(s, util.idle_cpus, field.json_key);
 }
 
-pub fn nodeReasonUser(s: *Stringify, instance: *slurm.Node, field: anytype, _: anytype) !void {
-    var buf: [std.c.NAME_MAX]u8 = undefined;
-    try json.write(s, try uidToNameBuf(&buf, instance.reason_uid), field.json_key);
+pub fn userName(comptime field_name: [:0]const u8) types.Serialize {
+    const S = struct {
+        pub fn parse(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {
+            var buf: [std.c.NAME_MAX]u8 = undefined;
+            const value = @field(instance, field_name);
+            try json.write(s, try uidToNameBuf(&buf, value), field.json_key);
+        }
+    };
+    return &S.parse;
 }
 
-pub fn jobUserName(s: *Stringify, instance: *slurm.Job, field: anytype, _: anytype) !void {
-    var buf: [std.c.NAME_MAX]u8 = undefined;
-    try json.write(s, try uidToNameBuf(&buf, instance.user_id), field.json_key);
+pub fn stdio(comptime field_name: [:0]const u8) types.Serialize {
+    const S = struct {
+        pub fn parse(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {
+            var buf: [std.c.PATH_MAX]u8 = undefined;
+            const value = @field(instance, field_name);
+            const path = instance.getStdioPath(value, &buf) catch null;
+            try json.write(s, path, field.json_key);
+        }
+    };
+    return &S.parse;
 }
 
-pub fn jobStdOut(s: *Stringify, instance: *slurm.Job, field: anytype, _: anytype) !void {
-    // TODO: Do we need to allocate? Or is this fine once the value is written?
-    var buf: [std.c.PATH_MAX]u8 = undefined;
-    const value = instance.stdoutBuf(&buf) catch null;
-    try json.write(s, value, field.json_key);
-}
-
-pub fn jobStdErr(s: *Stringify, instance: *slurm.Job, field: anytype, _: anytype) !void {
-    var buf: [std.c.PATH_MAX]u8 = undefined;
-    const value = instance.stderrBuf(&buf) catch null;
-    try json.write(s, value, field.json_key);
-}
-
-pub fn jobStdIn(s: *Stringify, instance: *slurm.Job, field: anytype, _: anytype) !void {
-    var buf: [std.c.PATH_MAX]u8 = undefined;
-    const value = instance.stdinBuf(&buf) catch null;
+pub fn sluid(s: *Stringify, instance: slurm.Step.ID, field: anytype, _: anytype) !void {
+    var buf: [15:0]u8 = undefined;
+    const value = instance.parseSluid(&buf);
     try json.write(s, value, field.json_key);
 }
 
