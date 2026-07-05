@@ -38,3 +38,25 @@ pub fn handler(comptime action: anytype) Action {
 
     return &H.handle;
 }
+
+const Description = struct {
+    name: []const u8,
+    method: []const u8,
+};
+
+pub fn addRoutes(router: anytype, comptime api: type) void {
+    inline for (@typeInfo(api).@"struct".decls) |decl| {
+        const d: Description = comptime blk: {
+            var itr = std.mem.splitScalar(u8, decl.name, ' ');
+            const method = itr.first();
+            var buf: [64]u8 = undefined;
+            const method_lower = std.ascii.lowerString(&buf, method);
+            const name = itr.rest();
+
+            break :blk .{ .name = name, .method = method_lower};
+        };
+        const f = @field(api, decl.name);
+        const method_action = @field(@TypeOf(router.*), "get");
+        method_action(router, d.name, handler(f), .{});
+    }
+}

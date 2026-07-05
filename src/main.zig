@@ -44,12 +44,7 @@ pub fn main() !void {
     var db_routes = router.group("/api/db", .{
       .dispatcher = Handler.dispatchAuth,
     });
-
-    db_routes.get("/users", route.handler(api.db.Users.get), .{});
-    db_routes.get("/jobs", route.handler(api.db.Jobs.get), .{});
-    db_routes.get("/jobs/:id", route.handler(api.db.Jobs.getOne), .{});
-    db_routes.get("/accounts", route.handler(api.db.Accounts.get), .{});
-    db_routes.get("/associations", route.handler(api.db.Associations.get), .{});
+    route.addRoutes(&db_routes, api.db);
 
     try server.listen();
 }
