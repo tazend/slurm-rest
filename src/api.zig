@@ -9,6 +9,9 @@ const models = @import("models.zig");
 const jsonx = @import("json.zig");
 const Response = models.Response;
 const util = @import("util.zig");
+const RequestContext = @import("route.zig").RequestContext;
+
+pub const db = @import("api/db.zig");
 
 const JobBriefInfo = struct {
     id: u32,
@@ -28,10 +31,10 @@ const JobBriefInfo = struct {
 
 const QueueSummary = std.ArrayListUnmanaged(JobBriefInfo);
 
-pub fn getQueueSummary(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.object) {
+pub fn getQueueSummary(ctx: *RequestContext) !Response(.object) {
     const data = try slurm.job.load();
     var queue_summary: QueueSummary = .empty;
-    const allocator = res.arena;
+    const allocator = ctx.arena;
 
     var iter = data.iter();
     while (iter.next()) |job| {
@@ -50,75 +53,75 @@ pub fn getQueueSummary(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Re
         };
         try queue_summary.append(allocator, job_brief);
     }
-    return .{ .data = try json(res.arena, queue_summary.items) };
+    return .{ .data = try json(allocator, queue_summary.items) };
 }
 
 pub const Job = struct {
 
-    pub fn getSteps(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.array) {
-        const id = req.param("id").?;
+    pub fn getSteps(ctx: *RequestContext) !Response(.array) {
+        const id = ctx.req.param("id").?;
         const resp = try slurm.step.loadForJob(try std.fmt.parseInt(u32, id, 10));
         defer resp.deinit();
-        return .{ .data = try json(res.arena, resp) };
+        return .{ .data = try json(ctx.arena, resp) };
     }
 
-    pub fn getOne(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.object) {
-        const id = req.param("id").?;
+    pub fn getOne(ctx: *RequestContext) !Response(.object) {
+        const id = ctx.req.param("id").?;
         var job = try slurm.job.loadOne(try std.fmt.parseInt(u32, id, 10));
         defer job.deinit();
-        return .{ .data = try json(res.arena, &job) };
+        return .{ .data = try json(ctx.arena, &job) };
     }
 
-    pub fn get(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
+    pub fn get(ctx: *RequestContext) !Response(.array) {
         const resp = try slurm.job.load();
         defer resp.deinit();
-        return .{ .data = try json(res.arena, resp), };
+        return .{ .data = try json(ctx.arena, resp), };
     }
 
-    pub fn delete(_: *Handler, req: *httpz.Request, _: *httpz.Response) !Response(.null) {
-        const id = try std.fmt.parseInt(u32, req.param("id").?, 10);
+    pub fn delete(ctx: *RequestContext) !Response(.null) {
+        const id = try std.fmt.parseInt(u32, ctx.req.param("id").?, 10);
         _ = try slurm.job.cancel(id);
         return .{};
     }
 
-    pub fn getScript(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.string) {
-        const id = try std.fmt.parseInt(u32, req.param("id").?, 10);
-        const script = try slurm.job.getBatchScript(res.arena, id);
-        return .{ .data = try json(res.arena, script) };
+    pub fn getScript(ctx: *RequestContext) !Response(.string) {
+        const id = try std.fmt.parseInt(u32, ctx.req.param("id").?, 10);
+        const script = try slurm.job.getBatchScript(ctx.arena, id);
+        return .{ .data = try json(ctx.arena, script) };
     }
 };
 
 pub const Step = struct {
 
-    pub fn get(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
+    pub fn get(ctx: *RequestContext) !Response(.array) {
         const resp = try slurm.step.load();
         defer resp.deinit();
-        return .{ .data = try json(res.arena, resp), };
+        return .{ .data = try json(ctx.arena, resp), };
     }
 };
 
-pub fn getNodes(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
+pub fn getNodes(ctx: *RequestContext) !Response(.array) {
     const resp = try slurm.node.load();
     defer resp.deinit();
-    return .{ .data = try json(res.arena, resp) };
+    return .{ .data = try json(ctx.arena, resp) };
 }
 
-pub fn getNode(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.object) {
-    const name = req.param("name").?;
-    const name_z = try res.arena.dupeZ(u8, name);
+pub fn getNode(ctx: *RequestContext) !Response(.object) {
+    const name = ctx.req.param("name").?;
+    const name_z = try ctx.arena.dupeZ(u8, name);
     var node = try slurm.node.loadOne(name_z);
     defer node.deinit();
-    return .{ .data = try json(res.arena, &node) };
+    return .{ .data = try json(ctx.arena, &node) };
 }
 
-pub fn getPartitions(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
+pub fn getPartitions(ctx: *RequestContext) !Response(.array) {
     const resp = try slurm.partition.load();
     defer resp.deinit();
-    return .{ .data = try json(res.arena, resp) };
+    return .{ .data = try json(ctx.arena, resp) };
 }
 
-pub fn getPartition(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.object) {
-    const name = req.param("name").?;
+pub fn getPartition(ctx: *RequestContext) !Response(.object) {
+    const name = ctx.req.param("name").?;
 
     const resp = try slurm.partition.load();
     defer resp.deinit();
@@ -127,7 +130,7 @@ pub fn getPartition(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Res
     while (iter.next()) |part| {
         const part_name = slurm.parseCStrZ(part.name) orelse continue;
         if (std.mem.eql(u8, name, part_name)) {
-            return .{ .data = try json(res.arena, part) };
+            return .{ .data = try json(ctx.arena, part) };
         }
     }
     return slurm.Error.InvalidPartitionName;
@@ -135,14 +138,14 @@ pub fn getPartition(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Res
 
 pub const Reservation = struct {
 
-    pub fn get(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
+    pub fn get(ctx: *RequestContext) !Response(.array) {
         const resp = try slurm.reservation.load();
         defer resp.deinit();
-        return .{ .data = try json(res.arena, resp) };
+        return .{ .data = try json(ctx.arena, resp) };
     }
 
-    pub fn getOne(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.object) {
-        const name = req.param("name").?;
+    pub fn getOne(ctx: *RequestContext) !Response(.object) {
+        const name = ctx.req.param("name").?;
 
         const resp = try slurm.reservation.load();
         defer resp.deinit();
@@ -151,7 +154,7 @@ pub const Reservation = struct {
         while (iter.next()) |resv| {
             const resv_name = slurm.parseCStrZ(resv.name) orelse continue;
             if (std.mem.eql(u8, name, resv_name)) {
-                return .{ .data = try json(res.arena, resv) };
+                return .{ .data = try json(ctx.arena, resv) };
             }
         }
         return slurm.Error.ReservationInvalid;
@@ -160,59 +163,18 @@ pub const Reservation = struct {
 
 pub const SlurmController = struct {
 
-    pub fn diag(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.object) {
+    pub fn diag(ctx: *RequestContext) !Response(.object) {
         const stats = try slurm.slurmctld.loadStats();
         defer stats.deinit();
-        return .{ .data = try json(res.arena, stats) };
+        return .{ .data = try json(ctx.arena, stats) };
     }
 
-    pub fn reconfigure(_: *Handler, _: *httpz.Request, _: *httpz.Response) !Response(.null) {
+    pub fn reconfigure(_: *RequestContext) !Response(.null) {
         try slurm.slurmctld.reconfigure();
         return .{};
     }
 };
 
-pub const DatabaseJobs = struct {
-
-    pub fn get(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
-        const conn: *slurm.db.Connection = try .open();
-        const filter: slurm.db.Job.Filter = .{};
-        const jobs = try slurm.db.job.load(conn, filter);
-        return .{ .data = try json(res.arena, jobs)};
-    }
-
-    pub fn getOne(_: *Handler, req: *httpz.Request, res: *httpz.Response) !Response(.object) {
-        const conn: *slurm.db.Connection = try .open();
-        const id = try std.fmt.parseInt(u32, req.param("id").?, 10);
-        const job = try slurm.db.job.loadOne(conn, id);
-        return .{ .data = try json(res.arena, job)};
-    }
-};
-
-pub const DatabaseAccounts = struct {
-
-    pub fn get(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
-        const conn: *slurm.db.Connection = try .open();
-        const filter: slurm.db.Account.Filter = .{};
-        const resp = try slurm.db.account.load(conn, filter);
-        return .{ .data = try json(res.arena, resp)};
-    }
-};
-
-pub const DatabaseUsers = struct {
-
-    pub fn get(_: *Handler, _: *httpz.Request, res: *httpz.Response) !Response(.array) {
-        const conn: *slurm.db.Connection = try .open();
-        var assoc_cond: slurm.db.Association.Filter = .{
-            .flags = .{
-                .only_defs = true,
-            }
-        };
-        const users = try slurm.db.user.load(conn, .{ .assoc_cond = &assoc_cond, .with_assocs = 1 });
-        return .{ .data = try json(res.arena, users)};
-    }
-};
-
-inline fn json(arena: Allocator, value: anytype) ![]const u8 {
+pub inline fn json(arena: Allocator, value: anytype) ![]const u8 {
     return jsonx.stringify(arena, value, .{});
 }
