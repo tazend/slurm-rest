@@ -108,7 +108,6 @@ pub fn resCoreSpec(s: *Stringify, instance: *slurm.Reservation, field: anytype, 
     try s.endArray();
 }
 
-
 const ArrayOptions = struct {
     sep: u8 = ',',
     numbers: bool = false,
@@ -200,6 +199,14 @@ pub fn number(s: *Stringify, instance: anytype, field: anytype, opts: anytype) !
 pub fn numberFlat(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {
     const opts: ?*const anyopaque = &NumberOptions{ .flat = true };
     return number(s, instance, field, opts);
+}
+
+pub fn numberFlatNoInfinite(s: *Stringify, instance: anytype, field: anytype, opts: anytype) !void {
+    const field_value = @field(instance, field.name);
+    if (slurm.common.numberIsInfinite(field_value)) {
+        try s.objectField(field.json_key);
+        try s.write(null);
+    } else return numberFlat(s, instance, field, opts);
 }
 
 pub fn numberNoValue(s: *Stringify, instance: anytype, field: anytype, _: anytype) !void {

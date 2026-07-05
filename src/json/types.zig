@@ -182,13 +182,26 @@ pub const Association: SlurmType = .{
         .{ .name = "grp_tres_run_mins_ctld", .serializer = ser.noop },
         .{ .name = "usage", .serializer = ser.noop },
         .{ .name = "leaf_usage", .serializer = ser.noop },
+
+        .{ .name = "grp_jobs", .new_name = "group_jobs_total", .serializer = ser.numberFlatNoInfinite },
+        .{ .name = "grp_jobs_accrue", .new_name = "group_jobs_accrue", .serializer = ser.numberFlatNoInfinite },
+        .{ .name = "grp_submit_jobs", .new_name = "group_jobs_submit", .serializer = ser.numberFlatNoInfinite },
+        .{ .name = "grp_wall", .new_name = "group_walltime", .serializer = ser.numberFlatNoInfinite },
+        .{ .name = "max_jobs", .new_name = "max_jobs_total", .serializer = ser.numberFlatNoInfinite },
+        .{ .name = "max_jobs_accrue", .new_name = "max_jobs_accrue", .serializer = ser.numberFlatNoInfinite },
+        .{ .name = "max_submit_jobs", .new_name = "max_jobs_submit", .serializer = ser.numberFlatNoInfinite },
+        .{ .name = "max_wall_pj", .new_name = "max_walltime_per_job", .serializer = ser.numberFlatNoInfinite },
+        .{ .name = "min_prio_thresh", .new_name = "min_priority_threshold", .serializer = ser.numberFlatNoInfinite },
+        .{ .name = "priority", .serializer = ser.numberFlatNoInfinite },
+
+        .{ .name = "is_def", .serializer = ser.bool },
     },
 };
 
 pub const Account: SlurmType = .{
     .typ = slurm.db.Account,
     .options = &.{
-//        .{ .name = "assoc_list", .serializer = ser.noop },
+        .{ .name = "assoc_list", .new_name = "associations", .serializer = ser.assocsShort },
     },
 };
 
