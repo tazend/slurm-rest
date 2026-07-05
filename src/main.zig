@@ -23,7 +23,6 @@ pub fn main() !void {
 
     var api_routes = router.group("/api", .{
       .dispatcher = Handler.dispatchAuth,
-//      .middlewares = &.{cors_middleware},
     });
 
     api_routes.get("/partitions/:name", route.handler(api.getPartition), .{});
@@ -42,10 +41,15 @@ pub fn main() !void {
     api_routes.get("/slurmctld/diag", route.handler(api.SlurmController.diag), .{});
     api_routes.get("/slurmctld/reconfigure", route.handler(api.SlurmController.reconfigure), .{});
 
-    api_routes.get("/db/users", route.handler(api.DatabaseUsers.get), .{});
-    api_routes.get("/db/jobs", route.handler(api.DatabaseJobs.get), .{});
-    api_routes.get("/db/jobs/:id", route.handler(api.DatabaseJobs.getOne), .{});
-    api_routes.get("/db/accounts", route.handler(api.DatabaseAccounts.get), .{});
+    var db_routes = router.group("/api/db", .{
+      .dispatcher = Handler.dispatchAuth,
+    });
+
+    db_routes.get("/users", route.handler(api.db.Users.get), .{});
+    db_routes.get("/jobs", route.handler(api.db.Jobs.get), .{});
+    db_routes.get("/jobs/:id", route.handler(api.db.Jobs.getOne), .{});
+    db_routes.get("/accounts", route.handler(api.db.Accounts.get), .{});
+    db_routes.get("/associations", route.handler(api.db.Associations.get), .{});
 
     try server.listen();
 }
