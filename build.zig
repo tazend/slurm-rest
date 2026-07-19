@@ -51,4 +51,5 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_exe_unit_tests.step);
+    b.installArtifact(exe_unit_tests);
 }
