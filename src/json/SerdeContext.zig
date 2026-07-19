@@ -85,6 +85,8 @@ pub const StringTypes = enum {
     job_stdin,
     job_stderr,
     user_name,
+    step_id,
+    sluid,
 };
 
 pub fn string(comptime T: StringTypes) SerdeContext {
@@ -96,6 +98,8 @@ pub fn string(comptime T: StringTypes) SerdeContext {
             .job_stdin => ser.stdio("std_in"),
             .job_stderr => ser.stdio("std_err"),
             .user_name => ser.userName("user_id"),
+            .step_id => ser.stepIDString,
+            .sluid => ser.sluid,
         },
         .parse = Parser.string,
         .json_type = .string,
@@ -103,8 +107,10 @@ pub fn string(comptime T: StringTypes) SerdeContext {
 }
 
 pub const IntegerTypes = enum {
+    std,
     native,
     native_zero_is_noval,
+    native_infinite_is_null,
     node_idle_cpus,
     timestamp,
     job_memory,
@@ -114,8 +120,10 @@ pub const IntegerTypes = enum {
 pub fn integer(comptime T: IntegerTypes) SerdeContext {
     return .{
         .dump = switch (T) {
+            .std => ser.native,
             .native => ser.numberFlat,
             .native_zero_is_noval => ser.numberFlatNoValue,
+            .native_infinite_is_null => ser.numberFlatNoInfinite,
             .node_idle_cpus => ser.nodeIdleCpus,
             .timestamp => ser.timestampRaw,
             .job_memory => ser.jobMemory,
