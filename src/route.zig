@@ -2,6 +2,7 @@ const std = @import("std");
 const slurm = @import("slurm");
 const httpz = @import("httpz");
 const Handler = @import("main.zig").Handler;
+const Dumper = @import("json/Dumper.zig");
 
 pub const RequestContext = struct {
     req: *httpz.Request,
@@ -11,6 +12,11 @@ pub const RequestContext = struct {
 };
 
 pub const Action = *const fn (*Handler, *httpz.Request, *httpz.Response) anyerror!void;
+
+pub fn respond(value: anytype, res: *httpz.Response) !void {
+    var dumper: Dumper = .init(res.arena, &res.buffer.writer);
+    try Dumper.writeRequireSchema(&dumper.s, value);
+}
 
 pub fn handler(comptime action: anytype) Action {
     const H = struct {
@@ -27,12 +33,13 @@ pub fn handler(comptime action: anytype) Action {
             const ret: B = action(&ctx) catch |err| blk: {
                 break :blk .{
                     .@"error" = .{
-                        .name = @errorName(err),
-                        .description = "TODO",
+                        .title = @errorName(err),
+                        .detail = "TODO",
                     },
                 };
             };
-            try res.json(ret, .{});
+            try respond(ret, res);
+//            try res.json(ret, .{});
         }
     };
 

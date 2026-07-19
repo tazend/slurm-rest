@@ -2,6 +2,7 @@ const std = @import("std");
 const slurm = @import("slurm");
 const httpz = @import("httpz");
 const api = @import("api.zig");
+const api_db = @import("api/db.zig");
 const auth = @import("auth.zig");
 const models = @import("models.zig");
 const route = @import("route.zig");
@@ -24,27 +25,12 @@ pub fn main() !void {
     var api_routes = router.group("/api", .{
       .dispatcher = Handler.dispatchAuth,
     });
-
-    api_routes.get("/partitions/:name", route.handler(api.getPartition), .{});
-    api_routes.get("/partitions", route.handler(api.getPartitions), .{});
-    api_routes.get("/nodes/:name", route.handler(api.getNode), .{});
-    api_routes.get("/nodes", route.handler(api.getNodes), .{});
-    api_routes.get("/jobs/:id/script", route.handler(api.Job.getScript), .{});
-    api_routes.get("/jobs/:id/steps", route.handler(api.Job.getSteps), .{});
-    api_routes.get("/jobs/:id", route.handler(api.Job.getOne), .{});
-    api_routes.delete("/jobs/:id", route.handler(api.Job.delete), .{});
-    api_routes.get("/jobs", route.handler(api.Job.get), .{});
-    api_routes.get("/steps", route.handler(api.Step.get), .{});
-    api_routes.get("/queue", route.handler(api.getQueueSummary), .{});
-    api_routes.get("/reservations", route.handler(api.Reservation.get), .{});
-    api_routes.get("/reservations/:name", route.handler(api.Reservation.getOne), .{});
-    api_routes.get("/slurmctld/diag", route.handler(api.SlurmController.diag), .{});
-    api_routes.get("/slurmctld/reconfigure", route.handler(api.SlurmController.reconfigure), .{});
+    route.addRoutes(&api_routes, api);
 
     var db_routes = router.group("/api/db", .{
       .dispatcher = Handler.dispatchAuth,
     });
-    route.addRoutes(&db_routes, api.db);
+    route.addRoutes(&db_routes, api_db);
 
     try server.listen();
 }
