@@ -134,6 +134,11 @@ pub fn array(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
         return;
     };
 
+    if (std.mem.eql(u8, "N/A", buf) or buf.len == 0) {
+        try s.print("[]", .{});
+        return;
+    }
+
     try s.beginArray();
     var it = std.mem.splitScalar(u8, buf, options.sep);
     while (it.next()) |item| {

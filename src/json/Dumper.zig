@@ -89,7 +89,7 @@ pub fn getSchema(comptime T: type) openapi.SchemaComponent {
     @compileError("No implementation found for " ++ @typeName(T));
 }
 
-fn baseType(comptime T: type) type {
+pub fn baseType(comptime T: type) type {
     return switch (@typeInfo(T)) {
         .optional, .pointer => blk: {
             const C = std.meta.Child(T);

@@ -79,6 +79,7 @@ pub fn gresDict(s: *Stringify, instance: anytype, field: anytype, _: anytype) !v
         const count = it_inner.first();
         const key = it_inner.rest();
 
+        // TODO: Try to parse to integer
         try s.objectField(key);
         try s.write(count);
     }
