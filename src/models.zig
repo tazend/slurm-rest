@@ -148,36 +148,15 @@ pub fn GenericResponse(comptime S: openapi.SchemaComponent) type {
     };
 }
 
-pub fn Response(comptime T: json.Type) type {
+pub fn IDPathParameter(comptime T: type) type {
     return struct {
-        @"error": ?Error = null,
-        meta: ?Meta = null,
-        data: ?[]const u8 = DefaultValue,
-        @"type": json.Type = T,
-
-        pub const DefaultValue: ?[]const u8 = switch(T) {
-            .array => "[]",
-            .string => "",
-            .object => "{}",
-            .null => null,
-            else => @compileError("Unsupported response Type"),
-        };
-
-        pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
-            try jw.beginObject();
-            try jw.objectField("error");
-            try jw.write(self.@"error");
-            try jw.objectField("meta");
-            try jw.write(self.meta);
-            try jw.objectField("data");
-            const data = if (self.data) |d|
-                // If for some reason our data is valid but empty, write the
-                // DefaultValue instead.
-                if (d.len == 0) DefaultValue else d
-            else
-                null;
-            try jw.print("{?s}", .{data});
-            try jw.endObject();
-        }
+        id: T,
     };
 }
+
+pub const NamePathParameter = struct {
+    name: [:0]const u8,
+};
+
+
+pub const JobIDPathParameter = IDPathParameter(u32);

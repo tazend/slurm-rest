@@ -200,7 +200,7 @@ pub const AssociationShort: SchemaComponent = .{
             .serde = .integer(.native),
         },
     },
-    .serde = .object(.native),
+    .serde = .object(.container),
 };
 
 pub const Partition: SchemaComponent = .{
@@ -1296,13 +1296,341 @@ pub const Job: SchemaComponent = .{
     .api_type = slurm.Job,
     .ignored_fields = &.{
         "node_inx", "priority_array", "req_node_inx", "exc_node_inx",
-        "array_bitmap",
-        // TODO:
-        "gres_detail_str",
+        "array_bitmap", "fed_siblings_active_str", "fed_siblings_viable_str",
+        "job_size_str",
+        "job_resrcs",
         "oom_kill_step",
         "deadline",
     },
     .properties = &.{
+        .{
+            .name = "account",
+            .description = "Name of the Account the Job runs under",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "accrue_time",
+            .description = "Accrue time",
+            .serde = .integer(.timestamp),
+        },
+        .{
+            .name = "admin_comment",
+            .description = "Comment set by the Admin",
+            .serde = .string(.native),
+        },
+        .{
+            .api_name = "alloc_node",
+            .name = "submit_host",
+            .description = "Host where this Job was submitted from",
+            .serde = .string(.native),
+        },
+        .{
+            .api_name = "alloc_sid",
+            .name = "submit_sid",
+            .description = "Submission SID",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "array_job_id",
+            .description = "Array ID of the Job",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            .name = "array_task_id",
+            .description = "Array Task ID of the Job",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            .name = "array_max_tasks",
+            .description = "How many Array Tasks can run simultaneously",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            .name = "array_task_str",
+            .description = "Array Task str",
+            .serde = .string(.native),
+        },
+        .{
+            .api_name = "assoc_id",
+            .name = "association_id",
+            .description = "ID of the Association the Job runs under",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "batch_features",
+            .description = "Batch Features requested by the Job",
+            .serde = .string(.native),
+        },
+        .{
+            .api_name = "batch_flag",
+            .name = "is_batch",
+            .description = "Whether the Job is a Batch Job or not",
+            .serde = .boolean(.int),
+        },
+        .{
+            .name = "batch_host",
+            .description = "Name of the Host where the Batch Step runs",
+            .serde = .string(.native),
+        },
+        .{
+            .api_name = "bitflags",
+            .name = "flags",
+            .description = "Certain Job Flags",
+            .serde = .array(.bitflag),
+        },
+        .{
+            .name = "boards_per_node",
+            .description = "How many boards per Node the Job requests",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            .name = "burst_buffer",
+            .description = "Burst Buffer Info",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "burst_buffer_state",
+            .description = "Burst Buffer State",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "cluster",
+            .description = "Name of the Cluster for this Job",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "cluster_features",
+            .description = "Cluster features required by this Job",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "command",
+            .description = "sbatch Command",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "comment",
+            .description = "Arbitrary Job comment",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "container",
+            .description = "Name of the Container the Job uses",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "container_id",
+            .description = "Container ID",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "contiguous",
+            .description = "Whether the Job requests contiguous nodes",
+            .serde = .boolean(.int),
+        },
+        .{
+            .api_name = "core_spec",
+            .name = "specialized_cores",
+            .description = "Number of Cores reserved for System",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            .name = "cores_per_socket",
+            .description = "Number of Cores per Socket requested",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            .name = "billable_tres",
+            .description = "Billable TRES",
+            .serde = .integer(.std),
+        },
+        .{
+            .name = "cpus_per_task",
+            .description = "CPUs Per Task requested",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "cpu_freq_min",
+            .description = "Minimum CPU Frequency",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            .name = "cpu_freq_max",
+            .description = "Maximum CPU Frequency",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+        // TODO: Better format
+            .name = "cpu_freq_gov",
+            .description = "CPU Frequency Governor",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            .name = "cpus_per_tres",
+            .description = "CPUs per TRES",
+            .serde = .dict(.key_value, &.{ .string, .integer }),
+        },
+        .{
+            .name = "cronspec",
+            .description = "Cron specification",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "deadline",
+            .description = "Job deadline as UNIX Timestamp",
+            .serde = .integer(.timestamp),
+        },
+        .{
+            .name = "delay_boot",
+            .description = "Delay the boot of the Node(s) by this amount of minutes",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            // TODO: Proper format
+            .name = "dependency",
+            .description = "Job dependencies",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "derived_ec",
+            .description = "Derived exit code",
+            .serde = .integer(.std),
+        },
+        .{
+            .name = "eligible_time",
+            .description = "UNIX Timestamp of when the Job was selected eligible",
+            .serde = .integer(.timestamp),
+        },
+        .{
+            .name = "end_time",
+            .description = "UNIX Timestamp of when the Job ends",
+            .serde = .integer(.timestamp),
+        },
+        .{
+            .api_name = "exc_nodes",
+            .name = "excluded_nodes",
+            .description = "Excluded Nodes",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "exit_code",
+            .description = "Exit code",
+            .serde = .integer(.std),
+        },
+        .{
+            .name = "extra",
+            .description = "Some extra information",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "failed_node",
+            .description = "Node that caused the Job to fail",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "features",
+            .description = "Features requested by the Job",
+            .serde = .array(.csv),
+        },
+        .{
+            .api_name = "fed_origin_str",
+            .name = "federation_origin",
+            .description = "Federation origin",
+            .serde = .string(.native),
+        },
+        .{
+            .api_name = "fed_siblings_active",
+            .name = "federation_siblings_active",
+            .description = "Federation siblings active",
+            .serde = .integer(.native),
+        },
+        .{
+            .api_name = "fed_siblings_viable",
+            .name = "federation_siblings_viable",
+            .description = "Federation siblings viable",
+            .serde = .integer(.native),
+        },
+        // TODO:
+     // .{
+     //     .api_name = "gres_detail_str",
+     //     .name = "gres_detail",
+     //     .description = "GRES Details",
+     //     .serde = .dict(.gres),
+     // },
+        .{
+            .name = "gres_total",
+            .description = "GRES Total",
+            .serde = .dict(.gres_count, &.{ .string, .integer }),
+        },
+        .{
+            .name = "group_id",
+            .description = "Group ID of the user owning the Job",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "het_job_id",
+            .description = "Heterogenous Job ID",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            .name = "het_job_id_set",
+            .description = "Heterogenous Job ID Range",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "het_job_offset",
+            .description = "Heterogenous Job Offset",
+            .serde = .integer(.native_zero_is_noval),
+        },
+        .{
+            .name = "state",
+            .description = "State of the Job",
+            .serde = .array(.bitflag),
+        },
+        .{
+            .api_name = "last_sched_eval",
+            .name = "last_sched_evaluation",
+            .description = "Last Scheduling Evaluation",
+            .serde = .integer(.timestamp),
+        },
+        .{
+            .name = "licenses",
+            .description = "Required Licenses",
+            .serde = .array(.csv),
+        },
+        .{
+            .name = "licenses_allocated",
+            .description = "Allocated Licenses",
+            .serde = .array(.csv),
+        },
+        .{
+            .name = "mail_type",
+            .description = "Mail Event types",
+            .serde = .array(.bitflag),
+        },
+        .{
+            .name = "mail_user",
+            .description = "User that receives E-Mail notifications",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "max_cpus",
+            .description = "Maximum Number of CPUs per Node",
+            .serde = .object(.number_zero_is_noval),
+        },
+        .{
+            .name = "max_nodes",
+            .description = "Maximum Nodes",
+            .serde = .object(.number_zero_is_noval),
+        },
+        .{
+            .name = "mcs_label",
+            .description = "Multi-Category Security Label",
+            .serde = .string(.native),
+        },
+
+
+
         .{
             .api_name = "pn_min_memory",
             .name = "memory",
@@ -1352,32 +1680,6 @@ pub const Job: SchemaComponent = .{
             .serde = .boolean(.int),
         },
         .{
-            .name = "array_job_id",
-            .description = "Array ID of the Job",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "array_task_id",
-            .description = "Array Task ID of the Job",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "array_max_tasks",
-            .description = "How many Array Tasks can run simultaneously",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .api_name = "batch_flag",
-            .name = "is_batch",
-            .description = "Whether the Job is a Batch Job or not",
-            .serde = .boolean(.int),
-        },
-        .{
-            .name = "boards_per_node",
-            .description = "How many boards per Node the Job requests",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
             .api_name = "state_desc",
             .name = "state_description",
             .description = "State Description",
@@ -1388,59 +1690,6 @@ pub const Job: SchemaComponent = .{
             .name = "wait_for_switch",
             .description = "How long to wait for Switches",
             .serde = .integer(.native),
-        },
-        .{
-            .name = "contiguous",
-            .description = "Whether the Job requests contiguous nodes",
-            .serde = .boolean(.int),
-        },
-        .{
-            .api_name = "core_spec",
-            .name = "specialized_cores",
-            .description = "Number of Cores reserved for System",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "cores_per_socket",
-            .description = "Number of Cores per Socket requested",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "cpu_freq_min",
-            .description = "Minimum CPU Frequency",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "cpu_freq_max",
-            .description = "Maximum CPU Frequency",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-        // TODO: Better format
-            .name = "cpu_freq_gov",
-            .description = "CPU Frequency Governor",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "cpus_per_tres",
-            .description = "CPUs per TRES",
-            .serde = .dict(.key_value, &.{ .string, .integer }),
-        },
-        .{
-            .api_name = "exc_nodes",
-            .name = "excluded_nodes",
-            .description = "Excluded Nodes",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "features",
-            .description = "Features requested by the Job",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "het_job_id",
-            .description = "Heterogenous Job ID",
-            .serde = .integer(.native_zero_is_noval),
         },
         .{
             .name = "ntasks_per_core",
@@ -1484,11 +1733,6 @@ pub const Job: SchemaComponent = .{
             .serde = .object(.number_zero_is_noval),
         },
         .{
-            .name = "max_cpus",
-            .description = "Maximum Number of CPUs per Node",
-            .serde = .object(.number_zero_is_noval),
-        },
-        .{
             .name = "time_min",
             .description = "Minimum Time Limit",
             .serde = .object(.number_zero_is_noval),
@@ -1517,6 +1761,7 @@ pub const Job: SchemaComponent = .{
             .name = "memory_total",
             .description = "Total memory allocated or requested by the Job",
             .serde = .integer(.job_memory_total),
+            .extra = true,
         },
     },
 };
@@ -2224,6 +2469,7 @@ pub const User: SchemaComponent = .{
             .name = "coordinators",
             .description = "List of Coordinators",
             .serde = .array(.list),
+            .ref = Coordinators,
         },
         .{
             .api_name = "def_qos_id",

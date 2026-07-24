@@ -6,11 +6,14 @@ const openapi = @import("../openapi.zig");
 const Dumper = @import("Dumper.zig");
 const Stringify = std.json.Stringify;
 const Token = std.json.Token;
+const baseType = Dumper.baseType;
+const models = @import("../models.zig");
 
 pub const ParseFN = *const fn(parser: *Parser, ctx: Context, ret: anytype) anyerror!void;
 
 allocator: Allocator,
 source: std.json.Scanner,
+slurm_arena: std.heap.ArenaAllocator,
 
 pub const Context = struct {
     field: ?openapi.Property = null,
@@ -21,14 +24,19 @@ pub fn parse(comptime T: type, allocator: Allocator, text: []const u8) !T {
     var parser: Parser = .{
         .allocator = allocator,
         .source = std.json.Scanner.initCompleteInput(allocator, text),
+        .slurm_arena = .init(slurm.slurm_allocator),
     };
+    return try parseRequireSchema(T, &parser);
+}
+
+pub fn parseRequireSchema(comptime T: type, parser: *Parser) !T {
     const schema = Dumper.getSchema(T);
     var ret: schema.api_type = undefined;
-    const ctx: Context = .{
+    const new_ctx: Context = .{
         .field = null,
         .schema = schema,
     };
-    try schema.serde.parse(&parser, ctx, &ret);
+    try schema.serde.parse(parser, new_ctx, &ret);
     return ret;
 }
 
@@ -39,8 +47,8 @@ pub fn native(parser: *Parser, ctx: Context, r: anytype) !void {
     });
 }
 
-pub fn unsupported(_: *Parser, _: Context, _: anytype) !void {
-    @compileError("Parsing for this Type is not supported.");
+pub fn unsupported(_: *Parser, _: Context, r: anytype) !void {
+    @compileError("Parsing for this Type is not supported: " ++ @typeName(@TypeOf(r)));
 }
 
 pub fn noop(parser: *Parser, ctx: Context, r: anytype) !void {
@@ -65,11 +73,58 @@ pub fn arrayRaw(parser: *Parser) ![:0]const u8 {
         if (!first) try writer.writeByte(',') else first = false;
         try writer.writeAll(item);
     }
+    // TODO: Maybe need to advance cursor and check for array_end
     return try aw.toOwnedSliceSentinel(0);
+}
+
+pub fn arrayContainerToList(parser: *Parser, ctx: Context, r: anytype) !void {
+    if (.array_begin != try parser.source.next()) return error.UnexpectedToken;
+
+    var list = @field(r, ctx.field.?.name);
+    list = .init();
+    defer @field(r, ctx.field.?.name) = list;
+
+    while (true) {
+        const T = baseType(@TypeOf(list)).ItemType;
+        const TBase = baseType(T);
+        const item: T = try parser.slurm_arena.allocator().create(TBase);
+
+        item.* = try parseRequireSchema(TBase, parser);
+        list.?.append(item);
+
+        if (.array_end == try parser.source.peekNextTokenType()) break;
+    }
+    if (.array_end != try parser.source.next()) return error.UnexpectedToken;
 }
 
 pub fn array(parser: *Parser, ctx: Context, r: anytype) !void {
     @field(r, ctx.field.?.name) = try arrayRaw(parser);
+}
+
+pub fn assocsShort(parser: *Parser, ctx: Context, r: anytype) !void {
+    if (.array_begin != try parser.source.next()) return error.UnexpectedToken;
+    const field_name = ctx.field.?.api_name orelse ctx.field.?.name;
+
+    var list = @field(r, field_name);
+    list = .init();
+    defer @field(r, field_name) = list;
+
+    while (true) {
+        const T = baseType(@TypeOf(list)).ItemType;
+        const TBase = baseType(T);
+        const item: T = try parser.slurm_arena.allocator().create(TBase);
+
+        const assoc_short = try parseRequireSchema(models.AssociationShort, parser);
+        item.acct = assoc_short.account;
+        item.cluster = assoc_short.cluster;
+        item.id = assoc_short.id;
+        item.partition = assoc_short.partition;
+        item.user = assoc_short.user;
+        list.?.append(item);
+
+        if (.array_end == try parser.source.peekNextTokenType()) break;
+    }
+    if (.array_end != try parser.source.next()) return error.UnexpectedToken;
 }
 
 pub fn arrayBitflag(parser: *Parser, ctx: Context, r: anytype) !void {
@@ -83,6 +138,15 @@ pub fn arrayBitflag(parser: *Parser, ctx: Context, r: anytype) !void {
 pub fn string(parser: *Parser, ctx: Context, r: anytype) !void {
     const value = try std.json.innerParse(
         [:0]const u8, parser.allocator, &parser.source,
+        .{ .allocate = .alloc_always, .max_value_len = parser.source.input.len
+    });
+    @field(r, ctx.field.?.name) = value;
+}
+
+pub fn integer(parser: *Parser, ctx: Context, r: anytype) !void {
+    const T = @TypeOf(@field(r, ctx.field.?.name));
+    const value = try std.json.innerParse(
+        T, parser.allocator, &parser.source,
         .{ .allocate = .alloc_always, .max_value_len = parser.source.input.len
     });
     @field(r, ctx.field.?.name) = value;
@@ -114,6 +178,8 @@ pub fn dict(parser: *Parser, ctx: Context, r: anytype) !void {
         try writer.writeAll(v);
     }
     @field(r, ctx.field.?.name) = try kv_list.toOwnedSliceSentinel(0);
+
+    // TODO: Maybe need to advance cursor and check for object_end
 }
 
 fn fieldNameFromToken(t: Token) !?[]const u8 {

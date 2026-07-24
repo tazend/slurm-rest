@@ -130,6 +130,7 @@ pub fn integer(comptime T: IntegerTypes) SerdeContext {
             .job_memory_total => ser.jobMemoryTotal,
         },
         .parse = switch (T) {
+            .native => Parser.integer,
             inline else => Parser.unsupported,
         },
         .json_type = .integer,
@@ -180,6 +181,8 @@ pub fn array(comptime T: ArrayTypes) SerdeContext {
             .csv => Parser.array,
             .native => Parser.native,
             .bitflag => Parser.arrayBitflag,
+            .list => Parser.arrayContainerToList,
+            .assocs_short => Parser.assocsShort,
             else => Parser.noop,
         },
         .json_type = .array,

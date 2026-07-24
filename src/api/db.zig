@@ -2,6 +2,7 @@ const std = @import("std");
 const slurm = @import("slurm");
 const models = @import("../models.zig");
 const dump = @import("../json/Dumper.zig").dump;
+const parse = @import("../json/Parser.zig").parse;
 const RequestContext = @import("../route.zig").RequestContext;
 const query_params = @import("../query_params.zig");
 
@@ -46,6 +47,29 @@ pub fn @"GET /accounts"(ctx: *RequestContext) !models.AccountsResponse {
     const resp = try slurm.db.account.load(conn, filter);
     defer resp.deinit();
     return .{ .data = try dump(ctx.arena, resp)};
+}
+
+pub fn @"POST /accounts"(ctx: *RequestContext) !models.BaseResponse {
+    const conn: *slurm.db.Connection = try .open();
+    const t = try parse(slurm.db.Account, ctx.arena, ctx.req.body() orelse return error.EmptyBody);
+    std.debug.print("{?s}\n", .{t.name});
+    std.debug.print("{?s}\n", .{t.organization});
+    if (t.coordinators) |c| {
+        var it = c.iter();
+        while (it.next()) |item| {
+            std.debug.print("coord name: {?s}\n", .{item.name});
+        }
+    }
+    if (t.assoc_list) |c| {
+        var it = c.iter();
+        while (it.next()) |item| {
+            std.debug.print("user: {?s}\n", .{item.user});
+            std.debug.print("account: {?s}\n", .{item.acct});
+        }
+    }
+    std.debug.print("flags: {}\n", .{t.flags});
+    _ = conn;
+    return .{};
 }
 
 pub fn @"GET /accounts/:name"(ctx: *RequestContext) !models.AccountsResponse {

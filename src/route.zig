@@ -3,6 +3,7 @@ const slurm = @import("slurm");
 const httpz = @import("httpz");
 const Handler = @import("main.zig").Handler;
 const Dumper = @import("json/Dumper.zig");
+const openapi = @import("openapi.zig");
 
 pub const RequestContext = struct {
     req: *httpz.Request,
@@ -63,7 +64,31 @@ pub fn addRoutes(router: anytype, comptime api: type) void {
             break :blk .{ .name = name, .method = method_lower};
         };
         const f = @field(api, decl.name);
-        const method_action = @field(@TypeOf(router.*), "get");
+        const method_action = @field(@TypeOf(router.*), d.method);
         method_action(router, d.name, handler(f), .{});
     }
 }
+
+pub const Route = struct {
+    method: []const u8,
+    path: []const u8,
+    tags: []const []const u8,
+    summary: []const u8,
+    description: []const u8,
+    operationId: []const u8,
+    security: ?[]const []const u8 = null,
+    responses: []const Responses,
+    requestBody: ?openapi.SchemaComponent = null,
+    parameters: Parameters = .{},
+
+    pub const Responses = struct {
+        code: u16 = 200,
+        ref: openapi.SchemaComponent,
+        description: []const u8,
+    };
+
+    pub const Parameters = struct {
+        path: ?type = null,
+        query: ?type = null,
+    };
+};

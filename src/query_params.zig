@@ -8,6 +8,11 @@ const baseType = @import("json/Dumper.zig").baseType;
 
 const Parser = *const fn(target: anytype, value: [:0]const u8, comptime ctx: Context) anyerror!void;
 
+pub const Style = enum {
+    simple,
+    form,
+};
+
 pub const Context = struct {
     field_name: [:0]const u8,
     api_member: ?[:0]const u8 = null,
@@ -16,9 +21,13 @@ pub const Context = struct {
 pub const Parameter = struct {
     api_name: ?[:0]const u8 = null,
     api_member: ?[:0]const u8 = null,
+    api_type: ?type = null,
+    parse: Parser,
     name: [:0]const u8,
     description: []const u8,
-    parse: Parser,
+    required: bool = false,
+    style: Style = .form,
+    explode: bool = true,
 };
 
 pub const QueryParameterComponent = struct {
