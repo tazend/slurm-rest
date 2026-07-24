@@ -1,5 +1,5 @@
 const std = @import("std");
-const SerdeContext = @import("json/SerdeContext.zig");
+pub const SerdeContext = @import("json/SerdeContext.zig");
 const dump = @import("json/parse.zig");
 const JSONType = SerdeContext.JSONType;
 const slurm = @import("slurm");
@@ -169,38 +169,6 @@ pub const Meta: SchemaComponent = .{
             .serde = .object(.native),
         },
     },
-};
-
-pub const AssociationShort: SchemaComponent = .{
-    .api_type = models.AssociationShort,
-    .properties = &.{
-        .{
-            .name = "account",
-            .description = "Name of the Account",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "cluster",
-            .description = "Name of the Cluster",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "partition",
-            .description = "Name of the Partition",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "user",
-            .description = "Name of the User, if applicable",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "id",
-            .description = "ID of the Association",
-            .serde = .integer(.native),
-        },
-    },
-    .serde = .object(.container),
 };
 
 pub const Partition: SchemaComponent = .{
@@ -412,203 +380,6 @@ pub const Coordinator: SchemaComponent = .{
             .name = "direct",
             .description = "Whether the Coordinator is direct",
             .serde = .boolean(.int),
-        },
-    },
-};
-
-pub const Association: SchemaComponent = .{
-    .api_type = slurm.db.Association,
-    .ignored_fields = &.{
-        "assoc_next", "assoc_next_id", "user_rec", "accounting_list",
-        "max_tres_mins_ctld", "max_tres_run_mins_ctld", "max_tres_ctld",
-        "max_tres_pn_ctld", "grp_tres_ctld", "grp_tres_mins_ctld",
-        "grp_tres_run_mins_ctld", "usage", "leaf_usage",
-    },
-    .properties = &.{
-        .{
-            .api_name = "acct",
-            .name = "account",
-            .description = "Name of the Account",
-            .serde = .string(.native),
-        },
-//      .{
-//          .api_name = "bf_usage",
-//          .name = "backfill_usage",
-//          .description = "Backfill Usage",
-//          .serde = .object(.container),
-//      },
-        .{
-            .name = "cluster",
-            .description = "Name of the Cluster",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "comment",
-            .description = "Arbitrary Comment",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "flags",
-            .description = "Association Flags",
-            .serde = .array(.bitflag),
-        },
-        .{
-            .api_name = "grp_jobs",
-            .name = "group_jobs",
-            .description = "Group Job Limit",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        .{
-            .api_name = "grp_jobs_accrue",
-            .name = "group_jobs_accrue",
-            .description = "Group Job Accrue",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        .{
-            .api_name = "grp_submit_jobs",
-            .name = "group_submit_jobs",
-            .description = "Group Submit Jobs",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        .{
-            .api_name = "grp_tres",
-            .name = "group_tres",
-            .description = "Group TRES",
-            .serde = .dict(.key_value, &.{ .string, .integer }),
-        },
-        .{
-            .api_name = "grp_tres_mins",
-            .name = "group_tres_minutes",
-            .description = "Group TRES Minutes",
-            .serde = .dict(.key_value, &.{ .integer }),
-        },
-        .{
-            .api_name = "grp_tres_run_mins",
-            .name = "group_tres_run_minutes",
-            .description = "Group TRES Run Minutes",
-            .serde = .dict(.key_value, &.{ .integer }),
-        },
-        .{
-            .api_name = "grp_wall",
-            .name = "group_walltime",
-            .description = "Group Walltime",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        .{
-            .name = "id",
-            .description = "Association ID",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "is_def",
-            .name = "is_default",
-            .description = "Whether this is the Users default Association",
-            .serde = .boolean(.int),
-        },
-//      .{
-//          .name = "leaf_usage",
-//          .description = "Leaf Usage",
-//          .serde = .object(.container),
-//      },
-        .{
-            .name = "lineage",
-            .description = "Association Lineage",
-            .serde = .string(.native),
-        },
-        .{
-            .api_name = "max_jobs",
-            .name = "max_jobs_total",
-            .description = "Max Jobs Total",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        .{
-            .name = "max_jobs_accrue",
-            .description = "Max Jobs Accrue",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        .{
-            .name = "max_submit_jobs",
-            .description = "Max Jobs submit",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        .{
-            .api_name = "max_tres_mins_pj",
-            .name = "max_tres_minutes_per_job",
-            .description = "Max tres minutes per Job",
-            .serde = .dict(.key_value, &.{ .integer, .string }),
-        },
-        .{
-            .api_name = "max_tres_run_mins",
-            .name = "max_tres_run_minutes",
-            .description = "Max tres run minutes",
-            .serde = .dict(.key_value, &.{ .integer, .string }),
-        },
-        .{
-            .api_name = "max_tres_pj",
-            .name = "max_tres_per_job",
-            .description = "Max tres per Job",
-            .serde = .dict(.key_value, &.{ .integer, .string }),
-        },
-        .{
-            .api_name = "max_tres_pn",
-            .name = "max_tres_per_node",
-            .description = "Max tres per Node",
-            .serde = .dict(.key_value, &.{ .integer, .string }),
-        },
-        .{
-            .api_name = "max_wall_pj",
-            .name = "max_walltime_per_job",
-            .description = "Max Walltime per Job",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        .{
-            .api_name = "min_prio_thresh",
-            .name = "min_priority_threshold",
-            .description = "Minimum priority threshold",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        .{
-            .api_name = "parent_acct",
-            .name = "parent_account",
-            .description = "Parent Account",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "parent_id",
-            .description = "Parent Association ID",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "partition",
-            .description = "Partition assigned",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "priority",
-            .description = "Priority",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        // TODO: Support List of Strings
-//      .{
-//          .name = "qos_list",
-//          .description = "List of QoS the Association can use",
-//          .serde = .array(.list),
-//      },
-        .{
-            .api_name = "shares_raw",
-            .name = "shares",
-            .description = "Association Shares",
-            .serde = .integer(.native_infinite_is_null),
-        },
-        .{
-            .name = "uid",
-            .description = "User ID",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "user",
-            .description = "Name of the User",
-            .serde = .string(.native),
         },
     },
 };
@@ -1131,45 +902,6 @@ pub const DBStep: SchemaComponent = .{
             .name = "user_cpu_usec",
             .description = "User CPU Microseconds",
             .serde = .integer(.native),
-        },
-    },
-};
-
-pub const Account: SchemaComponent = .{
-    .api_type = slurm.db.Account,
-    .properties = &.{
-        .{
-            .api_name = "assoc_list",
-            .name = "associations",
-            .description = "List of Associations (short-form) for the Account.",
-            .serde = .array(.assocs_short),
-            .ref = AssociationsShort,
-        },
-        .{
-            .name = "coordinators",
-            .description = "List of Coordinators",
-            .serde = .array(.list),
-            .ref = Coordinator,
-        },
-        .{
-            .name = "description",
-            .description = "Account description",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "flags",
-            .description = "Account flags",
-            .serde = .array(.bitflag),
-        },
-        .{
-            .name = "name",
-            .description = "Name of the Account",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "organization",
-            .description = "Name of the Organization",
-            .serde = .string(.native),
         },
     },
 };
@@ -2517,9 +2249,6 @@ pub const User: SchemaComponent = .{
     },
 };
 
-pub const AssociationsShort: SchemaComponent = .array(AssociationShort, .assocs_short);
-pub const Accounts:          SchemaComponent = .array(Account, .list);
-pub const Associations:      SchemaComponent = .array(Association, .list);
 pub const DBJobs:            SchemaComponent = .array(DBJob, .list);
 pub const DBSteps:           SchemaComponent = .array(DBStep, .list);
 pub const Coordinators:      SchemaComponent = .array(Coordinator, .list);
@@ -2531,8 +2260,6 @@ pub const Partitions:        SchemaComponent = .array(Partition, .load_response)
 pub const Nodes:             SchemaComponent = .array(Node, .load_response);
 pub const Steps:             SchemaComponent = .array(Step, .load_response);
 
-pub const AccountsResponse =     GenericResponse("Accounts", "List of Accounts");
-pub const AssociationsResponse = GenericResponse("Associations", "List of Associations");
 pub const DBJobsResponse =       GenericResponse("DBJobs", "List of Database Jobs");
 pub const DBStepsResponse =      GenericResponse("DBSteps", "List of Database Steps");
 pub const CoordinatorsResponse = GenericResponse("Coordinators", "List of Database Coordinators");
@@ -2735,6 +2462,14 @@ pub const JobsResponse: SchemaComponent = .{
     },
 };
 
-test {
-    _  = NodesResponse;
-}
+const account = @import("openapi/schemas/account.zig");
+pub const Account = account.Account;
+pub const Accounts = account.Accounts;
+pub const AccountsResponse = account.Response;
+
+const assoc = @import("openapi/schemas/association.zig");
+pub const Association = assoc.Association;
+pub const Associations = assoc.Associations;
+pub const AssociationShort = assoc.AssociationShort;
+pub const AssociationsShort = assoc.AssociationsShort;
+pub const AssociationsResponse = assoc.AssociationsResponse;
