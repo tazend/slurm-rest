@@ -7,7 +7,9 @@ const openapi = @import("../openapi.zig");
 const models = @import("../models.zig");
 const SerdeContext = @import("SerdeContext.zig");
 
-s: Stringify,
+pub const NewDumpFN = *const fn(dumper: *Dumper, value: anytype, ctx: Dumper.Context) anyerror!void;
+
+json: Stringify,
 allocator: Allocator,
 
 pub const Context = struct {
@@ -44,9 +46,7 @@ pub const FieldDescription = struct {
     name: [:0]const u8,
 };
 
-pub const NewDumpFN = *const fn(s: *Stringify, value: anytype, ctx: Dumper.Context) anyerror!void;
-
-pub fn writeRequireSchema(s: *Stringify, value: anytype) !void {
+pub fn writeRequireSchema(dumper: *Dumper, value: anytype) !void {
     const T = @TypeOf(value);
     const schema = comptime getSchema(T);
     const ctx: Context = .{
@@ -54,13 +54,13 @@ pub fn writeRequireSchema(s: *Stringify, value: anytype) !void {
         .field = null,
         .options = null,
     };
-    try schema.serde.dump(s, value, ctx);
+    try schema.serde.dump(dumper, value, ctx);
 }
 
 pub fn init(allocator: Allocator, writer: *std.Io.Writer) Dumper {
     return .{
         .allocator = allocator,
-        .s = .{
+        .json = .{
             .options = .{},
             .writer = writer,
         },
@@ -70,7 +70,7 @@ pub fn init(allocator: Allocator, writer: *std.Io.Writer) Dumper {
 pub fn dump(allocator: Allocator, value: anytype) ![]const u8 {
     var aw: std.Io.Writer.Allocating = .init(allocator);
     var dumper: Dumper = .init(allocator, &aw.writer);
-    try writeRequireSchema(&dumper.s, value);
+    try writeRequireSchema(&dumper, value);
     return aw.toOwnedSlice();
 }
 

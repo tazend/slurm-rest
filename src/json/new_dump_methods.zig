@@ -8,14 +8,14 @@ const types = json.types;
 const Dumper = @import("Dumper.zig");
 
 /// Skips a field / container entirely
-pub fn noop(_: *Stringify, _: anytype, _: Dumper.Context) !void {}
+pub fn noop(_: *Dumper, _: anytype, _: Dumper.Context) !void {}
 
 const DictOptions = struct {
     sep1: u8 = ',',
     sep2: u8 = '=',
 };
 
-pub fn dict(s: *Stringify, value: anytype, ctx: Dumper.Context) !void {
+pub fn dict(dumper: *Dumper, value: anytype, ctx: Dumper.Context) !void {
     std.debug.assert(ctx.field != null);
 
     const options: *const DictOptions = blk: {
@@ -27,19 +27,19 @@ pub fn dict(s: *Stringify, value: anytype, ctx: Dumper.Context) !void {
     };
 
     const field_value = @field(value, ctx.field.?.name);
-    try s.objectField(ctx.field.?.json_key);
+    try dumper.json.objectField(ctx.field.?.json_key);
 
     const buf = slurm.parseCStrZ(field_value) orelse {
-        try s.print("{{}}", .{});
+        try dumper.json.print("{{}}", .{});
         return;
     };
 
     if (std.mem.eql(u8, "N/A", buf)) {
-        try s.print("{{}}", .{});
+        try dumper.json.print("{{}}", .{});
         return;
     }
 
-    try s.beginObject();
+    try dumper.json.beginObject();
     var it_outer = std.mem.splitScalar(u8, buf, options.sep1);
     while (it_outer.next()) |item| {
         var it_inner = std.mem.splitScalar(u8, item, options.sep2);
@@ -47,74 +47,74 @@ pub fn dict(s: *Stringify, value: anytype, ctx: Dumper.Context) !void {
         const val = it_inner.rest();
         const val_num = std.fmt.parseInt(u128, val, 10) catch null;
 
-        try s.objectField(key);
+        try dumper.json.objectField(key);
         if (val_num) |v| {
-            try s.write(v);
-        } else try s.write(val);
+            try dumper.json.write(v);
+        } else try dumper.json.write(val);
     }
-    try s.endObject();
+    try dumper.json.endObject();
 }
 
-pub fn @"bool"(s: *Stringify, value: anytype, ctx: Dumper.Context) !void {
+pub fn @"bool"(dumper: *Dumper, value: anytype, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
 
     const field_value = @field(value, field.name);
-    try s.objectField(field.json_key);
-    if (field_value == 0) try s.write(false) else try s.write(true);
+    try dumper.json.objectField(field.json_key);
+    if (field_value == 0) try dumper.json.write(false) else try dumper.json.write(true);
 }
 
-pub fn gresDict(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn gresDict(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
 
     const value = @field(instance, field.name);
-    try s.objectField(field.json_key);
+    try dumper.json.objectField(field.json_key);
 
     const buf = slurm.parseCStrZ(value) orelse {
-        try s.print("{{}}", .{});
+        try dumper.json.print("{{}}", .{});
         return;
     };
 
     if (std.mem.eql(u8, "N/A", buf)) {
-        try s.print("{{}}", .{});
+        try dumper.json.print("{{}}", .{});
         return;
     }
 
     var it = std.mem.splitScalar(u8, buf, ',');
-    try s.beginObject();
+    try dumper.json.beginObject();
     while (it.next()) |item| {
         var it_inner = std.mem.splitBackwardsScalar(u8, item, ':');
         const count = it_inner.first();
         const key = it_inner.rest();
 
-        try s.objectField(key);
-        try s.write(count);
+        try dumper.json.objectField(key);
+        try dumper.json.write(count);
     }
-    try s.endObject();
+    try dumper.json.endObject();
 }
 
-pub fn resCoreSpec(s: *Stringify, instance: *slurm.Reservation, ctx: Dumper.Context) !void {
+pub fn resCoreSpec(dumper: *Dumper, instance: *slurm.Reservation, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
 
-    try s.objectField(field.json_key);
+    try dumper.json.objectField(field.json_key);
     if (instance.core_spec_cnt == slurm.common.NoValue.u32 or instance.core_spec == null) {
-        try s.print("[]", .{});
+        try dumper.json.print("[]", .{});
         return;
     }
 
-    try s.beginArray();
+    try dumper.json.beginArray();
     for (0..instance.core_spec_cnt) |i| {
         const spec = instance.core_spec.?[i];
         const name = slurm.parseCStr(spec.node_name) orelse continue;
         const id = slurm.parseCStr(spec.core_id) orelse continue;
 
-        try s.beginObject();
-        try s.objectField("name");
-        try s.write(name);
-        try s.objectField("id");
-        try s.write(id);
-        try s.endObject();
+        try dumper.json.beginObject();
+        try dumper.json.objectField("name");
+        try dumper.json.write(name);
+        try dumper.json.objectField("id");
+        try dumper.json.write(id);
+        try dumper.json.endObject();
     }
-    try s.endArray();
+    try dumper.json.endArray();
 }
 
 const ArrayOptions = struct {
@@ -122,39 +122,39 @@ const ArrayOptions = struct {
     numbers: bool = false,
 };
 
-pub fn array(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn array(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = comptime ctx.requireField();
     const options = comptime ctx.getOptions(ArrayOptions);
 
     const value = @field(instance, field.name);
-    try s.objectField(field.json_key);
+    try dumper.json.objectField(field.json_key);
 
     const buf = slurm.parseCStrZ(value) orelse {
-        try s.print("[]", .{});
+        try dumper.json.print("[]", .{});
         return;
     };
 
     if (std.mem.eql(u8, "N/A", buf) or buf.len == 0) {
-        try s.print("[]", .{});
+        try dumper.json.print("[]", .{});
         return;
     }
 
-    try s.beginArray();
+    try dumper.json.beginArray();
     var it = std.mem.splitScalar(u8, buf, options.sep);
     while (it.next()) |item| {
         switch (options.numbers) {
             true => {
                 const v = std.fmt.parseInt(u64, item, 10) catch continue;
-                try s.write(v);
+                try dumper.json.write(v);
             },
-            false => try s.write(item),
+            false => try dumper.json.write(item),
         }
     }
-    try s.endArray();
+    try dumper.json.endArray();
 }
 
-pub fn arrayInt(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
-    return array(s, instance, .{
+pub fn arrayInt(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
+    return array(dumper, instance, .{
         .field = ctx.field,
         .options = &ArrayOptions{ .numbers = true },
     });
@@ -172,7 +172,7 @@ pub const NumberOptions = struct {
     flat: bool = false,
 };
 
-pub fn numberRaw(s: *Stringify, data: anytype, opts: anytype) !void {
+pub fn numberRaw(dumper: *Dumper, data: anytype, opts: anytype) !void {
     const T = @TypeOf(data);
     const raw_number = @as(T, data);
 
@@ -192,67 +192,67 @@ pub fn numberRaw(s: *Stringify, data: anytype, opts: anytype) !void {
     };
 
     switch (options.flat) {
-        false => try s.write(Number(T){
+        false => try dumper.json.write(Number(T){
             .value = value,
             .infinite = slurm.common.numberIsInfinite(data),
         }),
-        true => try s.write(value),
+        true => try dumper.json.write(value),
     }
 }
 
-pub fn number(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn number(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = comptime ctx.requireField();
     const field_value = @field(instance, field.name);
-    try s.objectField(field.json_key);
-    try numberRaw(s, field_value, ctx.options);
+    try dumper.json.objectField(field.json_key);
+    try numberRaw(dumper, field_value, ctx.options);
 }
 
-pub fn numberFlat(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
-    return number(s, instance, .{
+pub fn numberFlat(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
+    return number(dumper, instance, .{
         .field = ctx.field,
         .options = &NumberOptions{ .flat = true },
     });
 }
 
-pub fn numberFlatNoInfinite(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn numberFlatNoInfinite(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
     const field_value = @field(instance, field.name);
     if (slurm.common.numberIsInfinite(field_value)) {
-        try s.objectField(field.json_key);
-        try s.write(null);
-    } else return numberFlat(s, instance, ctx);
+        try dumper.json.objectField(field.json_key);
+        try dumper.json.write(null);
+    } else return numberFlat(dumper, instance, ctx);
 }
 
-pub fn numberNoValue(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
-    return number(s, instance, .{
+pub fn numberNoValue(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
+    return number(dumper, instance, .{
         .field = ctx.field,
         .options = &NumberOptions{ .zero_is_noval = true },
     });
 }
 
-pub fn numberFlatNoValue(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
-    return number(s, instance, .{
+pub fn numberFlatNoValue(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
+    return number(dumper, instance, .{
         .field = ctx.field,
         .options = &NumberOptions{ .flat = true, .zero_is_noval = true },
     });
 }
 
-pub fn jobMemory(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn jobMemory(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
     const value = instance.memory();
-    try s.objectField(field.json_key);
-    try numberRaw(s, value, ctx.options);
+    try dumper.json.objectField(field.json_key);
+    try numberRaw(dumper, value, ctx.options);
 }
 
-pub fn stepIDString(s: *Stringify, instance: slurm.Step.ID, ctx: Dumper.Context) !void {
+pub fn stepIDString(dumper: *Dumper, instance: slurm.Step.ID, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
     var buf: [128]u8 = undefined;
     const value = instance.toStrBuf(&buf) catch null;
-    try s.objectField(field.json_key);
-    try s.write(value);
+    try dumper.json.objectField(field.json_key);
+    try dumper.json.write(value);
 }
 
-fn assocShort(s: *Stringify, assoc: *slurm.db.Association) !void {
+fn assocShort(dumper: *Dumper, assoc: *slurm.db.Association) !void {
     const assoc_short: types.AssociationShort = .{
         .account = assoc.acct,
         .cluster = assoc.cluster,
@@ -260,58 +260,58 @@ fn assocShort(s: *Stringify, assoc: *slurm.db.Association) !void {
         .partition = assoc.partition,
         .id = assoc.id,
     };
-    try s.write(assoc_short);
+    try dumper.json.write(assoc_short);
 }
 
-pub fn assocsShort(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn assocsShort(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
-    try s.objectField(field.json_key);
+    try dumper.json.objectField(field.json_key);
     const assoc_list = @field(instance, field.name);
 
-    try s.beginArray();
+    try dumper.json.beginArray();
     if (assoc_list) |assocs| {
         var it = assocs.iter();
         while (it.next()) |item| {
-            try assocShort(s, item);
+            try assocShort(dumper, item);
         }
     }
-    try s.endArray();
+    try dumper.json.endArray();
 }
 
-pub fn jobMemoryTotal(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn jobMemoryTotal(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
     const value = instance.memoryTotal();
-    try s.objectField(field.json_key);
-    try numberRaw(s, value, ctx.options);
+    try dumper.json.objectField(field.json_key);
+    try numberRaw(dumper, value, ctx.options);
 }
 
-pub fn nodeState(s: *Stringify, instance: *const slurm.Node, ctx: Dumper.Context) !void {
+pub fn nodeState(dumper: *Dumper, instance: *const slurm.Node, ctx: Dumper.Context) !void {
     const field = comptime ctx.requireField();
     const field_value = @field(instance, field.name);
     const state = if (@as(u32, @bitCast(field_value)) != slurm.common.NoValue.u32)
         @tagName(field_value.base)
     else
         null;
-    try s.objectField(field.json_key);
-    try s.write(state);
+    try dumper.json.objectField(field.json_key);
+    try dumper.json.write(state);
 }
 
-pub fn nodeIdleCpus(s: *Stringify, instance: *slurm.Node, ctx: Dumper.Context) !void {
+pub fn nodeIdleCpus(dumper: *Dumper, instance: *slurm.Node, ctx: Dumper.Context) !void {
     const field = comptime ctx.requireField();
     const util = instance.utilization();
-    try s.objectField(field.json_key);
-    try s.write(util.idle_cpus);
+    try dumper.json.objectField(field.json_key);
+    try dumper.json.write(util.idle_cpus);
 }
 
 pub fn userName(comptime field_name: [:0]const u8) Dumper.NewDumpFN {
     const S = struct {
-        pub fn parse(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+        pub fn parse(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
             const field = ctx.field orelse std.debug.assert(false);
             var buf: [std.c.NAME_MAX]u8 = undefined;
             const value_raw = @field(instance, field_name);
             const value = try uidToNameBuf(&buf, value_raw);
-            try s.objectField(field.json_key);
-            try s.write(value);
+            try dumper.json.objectField(field.json_key);
+            try dumper.json.write(value);
         }
     };
     return &S.parse;
@@ -319,56 +319,56 @@ pub fn userName(comptime field_name: [:0]const u8) Dumper.NewDumpFN {
 
 pub fn stdio(comptime field_name: [:0]const u8) Dumper.NewDumpFN {
     const S = struct {
-        pub fn parse(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+        pub fn parse(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
             const field = ctx.field orelse std.debug.assert(false);
             var buf: [std.c.PATH_MAX]u8 = undefined;
             const value = @field(instance, field_name);
             const path = instance.getStdioPath(value, &buf) catch null;
-            try s.objectField(field.json_key);
-            try s.write(path);
+            try dumper.json.objectField(field.json_key);
+            try dumper.json.write(path);
         }
     };
     return &S.parse;
 }
 
-pub fn sluid(s: *Stringify, instance: slurm.Step.ID, ctx: Dumper.Context) !void {
+pub fn sluid(dumper: *Dumper, instance: slurm.Step.ID, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
     var buf: [15:0]u8 = undefined;
     const value = instance.parseSluid(&buf);
-    try s.objectField(field.json_key);
-    try s.write(value);
+    try dumper.json.objectField(field.json_key);
+    try dumper.json.write(value);
 }
 
-pub fn timestampRaw(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn timestampRaw(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
     const value = @field(instance, field.name);
     const time = if (value != 0) value else null;
-    try s.objectField(field.json_key);
-    try s.write(time);
+    try dumper.json.objectField(field.json_key);
+    try dumper.json.write(time);
 }
 
-pub fn loadResponse(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn loadResponse(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     std.debug.assert(ctx.schema != null);
 
-    try s.beginArray();
+    try dumper.json.beginArray();
     var iter = instance.iter();
     while (iter.next()) |item| {
-        try Dumper.writeRequireSchema(s, item);
+        try Dumper.writeRequireSchema(dumper, item);
     }
-    try s.endArray();
+    try dumper.json.endArray();
 }
 
-pub fn memberDefault(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn memberDefault(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = ctx.field orelse std.debug.assert(false);
     const value = @field(instance, field.name);
     const T = @TypeOf(value);
 
     if (T == std.posix.time_t) {
-        try timestampRaw(s, instance, ctx);
+        try timestampRaw(dumper, instance, ctx);
         return;
     }
-    try s.objectField(field.json_key);
-    try s.write(value);
+    try dumper.json.objectField(field.json_key);
+    try dumper.json.write(value);
 //  switch (@typeInfo(field.type)) {
 //      .int => |info| {
 //          switch (info.signedness) {
@@ -383,40 +383,40 @@ pub fn memberDefault(s: *Stringify, instance: anytype, ctx: Dumper.Context) !voi
 //  }
 }
 
-pub fn native(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn native(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = comptime ctx.requireField();
     const value = @field(instance, field.name);
-    try s.objectField(field.json_key);
-    try s.write(value);
+    try dumper.json.objectField(field.json_key);
+    try dumper.json.write(value);
 }
 
-pub fn printString(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn printString(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const field = comptime ctx.requireField();
     const value = @field(instance, field.name);
-    try s.objectField(field.json_key);
-    try s.print("{?s}", .{value});
+    try dumper.json.objectField(field.json_key);
+    try dumper.json.print("{?s}", .{value});
 }
 
-pub fn unsupported(_: *Stringify, _: anytype, _: Dumper.Context) !void {
+pub fn unsupported(_: *Dumper, _: anytype, _: Dumper.Context) !void {
     @compileError("Dumping this Type through this API is not supported");
 }
 
-pub fn container(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn container(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     if (ctx.field) |f| {
         // TODO: Also support non-optionals?
         const value = @field(instance, f.name);
-        try s.objectField(f.json_key);
-        return Dumper.writeRequireSchema(s, value);
+        try dumper.json.objectField(f.json_key);
+        return Dumper.writeRequireSchema(dumper, value);
     }
 
     const schema = comptime ctx.requireSchema();
 
     const v = switch (@typeInfo(@TypeOf(instance))) {
-        .optional => if (instance) |i| i else return try s.write(null),
+        .optional => if (instance) |i| i else return try dumper.json.write(null),
         else => instance,
     };
 
-    try s.beginObject();
+    try dumper.json.beginObject();
     inline for (schema.properties) |prop| {
         const f: Dumper.FieldDescription = .{
             .json_key = prop.name,
@@ -426,16 +426,16 @@ pub fn container(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
             .field = f,
             .options = null,
         };
-        try prop.serde.dump(s, v, field_ctx);
+        try prop.serde.dump(dumper, v, field_ctx);
     }
-    try s.endObject();
+    try dumper.json.endObject();
 }
 
-pub fn list(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
+pub fn list(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     if (ctx.field) |f| {
         const value = @field(instance, f.name);
-        try s.objectField(f.json_key);
-        return try Dumper.writeRequireSchema(s, value);
+        try dumper.json.objectField(f.json_key);
+        return try Dumper.writeRequireSchema(dumper, value);
     }
 
     const T = @TypeOf(instance);
@@ -445,11 +445,11 @@ pub fn list(s: *Stringify, instance: anytype, ctx: Dumper.Context) !void {
         else => instance.iter(),
     };
 
-    try s.beginArray();
+    try dumper.json.beginArray();
     if (it) |i| {
         while (i.next()) |item| {
-            try Dumper.writeRequireSchema(s, item);
+            try Dumper.writeRequireSchema(dumper, item);
         }
     }
-    try s.endArray();
+    try dumper.json.endArray();
 }

@@ -16,7 +16,7 @@ pub const Action = *const fn (*Handler, *httpz.Request, *httpz.Response) anyerro
 
 pub fn respond(value: anytype, res: *httpz.Response) !void {
     var dumper: Dumper = .init(res.arena, &res.buffer.writer);
-    try Dumper.writeRequireSchema(&dumper.s, value);
+    try Dumper.writeRequireSchema(&dumper, value);
 }
 
 pub fn handler(comptime action: anytype) Action {
