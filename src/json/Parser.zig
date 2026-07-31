@@ -29,6 +29,21 @@ pub fn parse(comptime T: type, allocator: Allocator, text: []const u8) !T {
     return try parseRequireSchema(T, &parser);
 }
 
+pub fn parse2(comptime T: openapi.SchemaComponent, allocator: Allocator, text: []const u8) !T.api_type {
+    var parser: Parser = .{
+        .allocator = allocator,
+        .source = std.json.Scanner.initCompleteInput(allocator, text),
+        .slurm_arena = .init(slurm.slurm_allocator),
+    };
+    var ret: T.api_type = undefined;
+    const new_ctx: Context = .{
+        .field = null,
+        .schema = T,
+    };
+    try T.serde.parse(&parser, new_ctx, &ret);
+    return ret;
+}
+
 pub fn parseRequireSchema(comptime T: type, parser: *Parser) !T {
     const schema = Dumper.getSchema(T);
     var ret: schema.api_type = undefined;

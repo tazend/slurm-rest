@@ -15,6 +15,7 @@ const path_params = @import("../../openapi/parameters/path.zig");
 pub const routes = &.{
     @"GET /db/accounts",
     @"GET /db/accounts/:name",
+    @"POST /db/accounts",
 };
 
 pub const @"GET /db/accounts" = struct {
@@ -80,5 +81,44 @@ pub const @"GET /db/accounts/:name" = struct {
         const resp = try slurm.db.account.load(ctx.db_conn, filter);
         defer resp.deinit();
         return .{ .data = try dump(ctx.arena, resp)};
+    }
+};
+
+pub const @"POST /db/accounts" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "Accounts",
+        },
+        .summary = "Create new Accounts",
+        .description = "Create new Accounts in the Database",
+        .operationId = "createAccounts",
+        .response = .{
+            .ref = openapi.BaseResponse,
+            .description = "TODO",
+        },
+        .requestBody = openapi.Account,
+        .requirements = .{
+            .db_conn = true,
+        }
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
+        std.debug.print("{?s}\n", .{ctx.body.name});
+        std.debug.print("{?s}\n", .{ctx.body.organization});
+        if (ctx.body.coordinators) |c| {
+            var it = c.iter();
+            while (it.next()) |item| {
+                std.debug.print("coord name: {?s}\n", .{item.name});
+            }
+        }
+        if (ctx.body.assoc_list) |c| {
+            var it = c.iter();
+            while (it.next()) |item| {
+                std.debug.print("user: {?s}\n", .{item.user});
+                std.debug.print("account: {?s}\n", .{item.acct});
+            }
+        }
+        std.debug.print("flags: {}\n", .{ctx.body.flags});
+        return .{};
     }
 };

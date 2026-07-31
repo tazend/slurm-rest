@@ -3,6 +3,7 @@ const slurm = @import("slurm");
 const httpz = @import("httpz");
 const Handler = @import("main.zig").Handler;
 const Dumper = @import("json/Dumper.zig");
+const Parser = @import("json/Parser.zig");
 const openapi = @import("openapi.zig");
 const apio = @import("api.zig");
 pub const jroutes = @import("routes/jobs.zig");
@@ -148,7 +149,7 @@ pub fn RouteData(comptime R: type) type {
                     .path = if (Meta.parameters.path) |p| try p.init(ctx) else {},
                     .query = if (Meta.parameters.query) |q| try q.init(ctx) else {},
                 },
-                .body = {},
+                .body = if (Meta.requestBody) |b| try Parser.parse2(b, ctx.arena, ctx.req.body() orelse return error.EmptyBody),
                 .req = ctx.req,
                 .res = ctx.res,
                 .arena = ctx.arena,
