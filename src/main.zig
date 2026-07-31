@@ -32,6 +32,11 @@ pub fn main() !void {
     });
     route.addRoutes(&db_routes, api_db);
 
+    var api_routes2 = router.group("/api2", .{
+      .dispatcher = Handler.dispatchAuth,
+    });
+    route.addRoutes2(&api_routes2);
+
     try server.listen();
 }
 

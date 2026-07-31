@@ -20,14 +20,29 @@ pub const Parameter = struct {
 pub const Parameters = struct {
     api_type: type,
     parameters: []const Parameter,
+
+    pub const init = parse;
 };
 
-pub const DBJobsParameters: Parameters = &.{
+pub const AccountParameter: Parameters = .{
+    .api_type = models.NamePathParameter,
+    .parameters = &.{
+        .{
+            .name = "name",
+            .description = "Name of the Account",
+            .type = .string,
+        },
+    },
+};
+
+pub const DBJobsParameters: Parameters = .{
     .api_type = models.JobIDPathParameter,
     .parameters = &.{
-        .name = "id",
-        .description = "The Job ID to get",
-        .type = .integer,
+        .{
+            .name = "id",
+            .description = "The Job ID to get",
+            .type = .integer,
+        },
     },
 };
 

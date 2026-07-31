@@ -33,6 +33,8 @@ pub const Parameter = struct {
 pub const QueryParameterComponent = struct {
     api_type: type,
     parameters: []const Parameter = &.{},
+
+    pub const init = parse;
 };
 
 pub const Associations: QueryParameterComponent = .{
