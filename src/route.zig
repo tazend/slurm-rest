@@ -13,11 +13,12 @@ const models = @import("models.zig");
 
 pub const route_categories = &.{
     @import("routes/jobs.zig"),
+    @import("routes/nodes.zig"),
+    @import("routes/steps.zig"),
+    @import("routes/partitions.zig"),
+    @import("routes/reservations.zig"),
     @import("routes/db/accounts.zig"),
-};
-
-pub const route_db_categories = &.{
-    @import("routes/db/accounts.zig"),
+    @import("routes/db/jobs.zig"),
 };
 
 pub const RequestContext = struct {

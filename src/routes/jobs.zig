@@ -9,11 +9,13 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
-const JobsParameters = @import("../openapi/parameters/path.zig").DBJobsParameters;
+const JobsParameters = @import("../openapi/parameters/path.zig").JobIDPathParameter;
 
 pub const routes = &.{
     @"GET /jobs",
     @"GET /jobs/:id",
+    @"GET /jobs/:id/steps",
+    @"GET /jobs/:id/script",
     @"DELETE /jobs/:id",
 };
 
@@ -60,10 +62,59 @@ pub const @"GET /jobs/:id" = struct {
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.JobResponse {
-        std.debug.print("job id is: {d}\n", .{ctx.parameters.path.id});
         var job = try slurm.job.loadOne(ctx.parameters.path.id);
         defer job.deinit();
         return .{ .data = try dump(ctx.arena, &job) };
+    }
+};
+
+pub const @"GET /jobs/:id/steps" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "Jobs",
+        },
+        .summary = "Get Steps for a Job",
+        .description = "Get all Steps for a single Job",
+        .operationId = "getJobSteps",
+        .response = .{
+            .ref = openapi.StepsResponse,
+            .description = "TODO",
+        },
+        .parameters = .{
+            .path = JobsParameters,
+        },
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.StepsResponse {
+        const resp = try slurm.step.loadForJob(ctx.parameters.path.id);
+        defer resp.deinit();
+        return .{
+            .steps = try dump(ctx.arena, resp),
+            .last_update = resp.last_update,
+        };
+    }
+};
+
+pub const @"GET /jobs/:id/script" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "Jobs",
+        },
+        .summary = "Get batch script",
+        .description = "Get batch script for a Job",
+        .operationId = "getJobScript",
+        .response = .{
+            .ref = openapi.JobScriptResponse,
+            .description = "TODO",
+        },
+        .parameters = .{
+            .path = JobsParameters,
+        },
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.JobScriptResponse {
+        const script = try slurm.job.getBatchScript(ctx.arena, ctx.parameters.path.id);
+        return .{ .script = script };
     }
 };
 

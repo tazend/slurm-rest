@@ -24,27 +24,34 @@ pub const Parameters = struct {
     pub const init = parse;
 };
 
-pub const AccountParameter: Parameters = .{
-    .api_type = models.NamePathParameter,
-    .parameters = &.{
-        .{
-            .name = "name",
-            .description = "Name of the Account",
-            .type = .string,
+pub fn NamePathParameter(comptime name: []const u8) Parameters {
+    return .{
+        .api_type = models.NamePathParameter,
+        .parameters = &.{
+            .{
+                .name = "name",
+                .description = "Name of the " ++ name,
+                .type = .string,
+            },
         },
-    },
-};
+    };
+}
 
-pub const DBJobsParameters: Parameters = .{
+pub const JobIDPathParameter: Parameters = .{
     .api_type = models.JobIDPathParameter,
     .parameters = &.{
         .{
             .name = "id",
-            .description = "The Job ID to get",
+            .description = "ID of the Job to operate on",
             .type = .integer,
         },
     },
 };
+
+pub const Node = NamePathParameter("Node");
+pub const Partition = NamePathParameter("Partition");
+pub const Reservation = NamePathParameter("Reservation");
+pub const AccountParameter = NamePathParameter("Account");
 
 pub fn parse(comptime P: Parameters, ctx: *RequestContext) !P.api_type {
     var out: P.api_type = undefined;
