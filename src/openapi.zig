@@ -2372,6 +2372,42 @@ pub const ControllerStatistics: SchemaComponent = .{
             .description = "Number of Jobs submitted",
             .serde = .integer(.native),
         },
+        .{
+            .name = "jobs_started",
+            .description = "Number of Jobs started",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "jobs_completed",
+            .description = "Number of Jobs completed",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "jobs_canceled",
+            .description = "Number of Jobs canceled",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "jobs_failed",
+            .description = "Number of Jobs failed",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "jobs_pending",
+            .description = "Number of Jobs pending",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "jobs_running",
+            .description = "Number of Jobs running",
+            .serde = .integer(.native),
+        },
+        .{
+            .api_name = "job_states_ts",
+            .name = "job_states_timestamp",
+            .description = "UNIX Timestamp",
+            .serde = .integer(.timestamp),
+        },
     },
 };
 
