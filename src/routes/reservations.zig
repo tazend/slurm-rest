@@ -14,6 +14,7 @@ const path_params = @import("../openapi/parameters/path.zig");
 pub const routes = &.{
     @"GET /reservations",
     @"GET /reservations/:name",
+    @"DELETE /reservations/:name",
 };
 
 pub const @"GET /reservations" = struct {
@@ -62,5 +63,28 @@ pub const @"GET /reservations/:name" = struct {
         defer resp.deinit();
         const resv = resp.find(ctx.parameters.path.name) orelse return slurm.Error.ReservationInvalid;
         return .{ .data = try dump(ctx.arena, resv) };
+    }
+};
+
+pub const @"DELETE /reservations/:name" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "Reservations",
+        },
+        .summary = "Delete Reservation",
+        .description = "Delete one specific Reservation",
+        .operationId = "deleteReservation",
+        .response = .{
+            .ref = openapi.BaseResponse,
+            .description = "TODO",
+        },
+        .parameters = .{
+            .path = path_params.Reservation,
+        },
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
+        try slurm.reservation.deleteByName(ctx.parameters.path.name);
+        return .{};
     }
 };

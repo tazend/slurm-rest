@@ -75,3 +75,19 @@ pub const @"GET /db/jobs/:id" = struct {
         return .{ .data = try dump(ctx.arena, job)};
     }
 };
+
+//  pub fn @"GET /jobs/:id/script"(ctx: *RequestContext) !models.DBJobResponse {
+//      const conn: *slurm.db.Connection = try .open();
+//      const id = try std.fmt.parseInt(u32, ctx.req.param("id").?, 10);
+//      var filter = try query_params.parse(query_params.Job, ctx);
+//      slurm.c.slurmdb_job_cond_def_start_end(&filter);
+//      const job = try slurm.db.job.loadOneWithFilter(conn, id, filter);
+//      defer job.deinit();
+
+//      const script = if (slurm.parseCStr(job.script)) |s|
+//          try ctx.arena.dupe(u8, s)
+//      else
+//          null;
+//      return .{ .data = script };
+//  }
+

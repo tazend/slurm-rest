@@ -1,8 +1,6 @@
 const std = @import("std");
 const slurm = @import("slurm");
 const httpz = @import("httpz");
-const api = @import("api.zig");
-const api_db = @import("api/db.zig");
 const auth = @import("auth.zig");
 const models = @import("models.zig");
 const route = @import("route.zig");
@@ -25,17 +23,7 @@ pub fn main() !void {
     var api_routes = router.group("/api", .{
       .dispatcher = Handler.dispatchAuth,
     });
-    route.addRoutes(&api_routes, api);
-
-    var db_routes = router.group("/api/db", .{
-      .dispatcher = Handler.dispatchAuth,
-    });
-    route.addRoutes(&db_routes, api_db);
-
-    var api_routes2 = router.group("/api2", .{
-      .dispatcher = Handler.dispatchAuth,
-    });
-    route.addRoutes2(&api_routes2);
+    route.addRoutes2(&api_routes);
 
     try server.listen();
 }

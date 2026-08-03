@@ -5,11 +5,8 @@ const Handler = @import("main.zig").Handler;
 const Dumper = @import("json/Dumper.zig");
 const Parser = @import("json/Parser.zig");
 const openapi = @import("openapi.zig");
-const apio = @import("api.zig");
-pub const jroutes = @import("routes/jobs.zig");
 const params_path = @import("openapi/parameters/path.zig");
 const params_query = @import("query_params.zig");
-const models = @import("models.zig");
 
 pub const route_categories = &.{
     @import("routes/jobs.zig"),
@@ -17,8 +14,11 @@ pub const route_categories = &.{
     @import("routes/steps.zig"),
     @import("routes/partitions.zig"),
     @import("routes/reservations.zig"),
+    @import("routes/controller.zig"),
     @import("routes/db/accounts.zig"),
     @import("routes/db/jobs.zig"),
+    @import("routes/db/users.zig"),
+    @import("routes/db/associations.zig"),
 };
 
 pub const RequestContext = struct {
@@ -41,50 +41,12 @@ pub const SlurmRequirements = struct {
     tres: bool = false,
 };
 
-pub fn handler(comptime action: anytype) Action {
-    const H = struct {
-        fn handle(h: *Handler, req: *httpz.Request, res: *httpz.Response) anyerror!void {
-            var ctx: RequestContext = .{
-                .arena = res.arena,
-                .res = res,
-                .req = req,
-                .handler = h,
-            };
-
-            const T = @typeInfo(@TypeOf(action)).@"fn".return_type.?;
-            const B = @typeInfo(T).error_union.payload;
-            const ret: B = action(&ctx) catch |err| blk: {
-                break :blk .{
-                    .@"error" = .{
-                        .title = @errorName(err),
-                        .detail = "TODO",
-                    },
-                };
-            };
-            try respond(ret, res);
-//            try res.json(ret, .{});
-        }
-    };
-
-    return &H.handle;
-}
-
 const Description = struct {
     name: []const u8,
     method: []const u8,
 
     pub fn init(name: [:0]const u8) Description {
-        var itr = std.mem.splitScalar(u8, name, ' ');
-        const method = itr.first();
-        var buf: [64]u8 = undefined;
-
-        return .{
-            .method = std.ascii.lowerString(&buf, method),
-            .name = itr.rest(),
-        };
-    }
-
-    pub fn init2(name: [:0]const u8) Description {
+        @setEvalBranchQuota(5000);
         var itr1 = std.mem.splitBackwardsScalar(u8, name, '.');
         var itr2 = std.mem.splitScalar(u8, itr1.first(), ' ');
         const method = itr2.first();
@@ -97,19 +59,10 @@ const Description = struct {
     }
 };
 
-pub fn addRoutes(router: anytype, comptime api: type) void {
-    inline for (@typeInfo(api).@"struct".decls) |decl| {
-        const d: Description = comptime .init(decl.name);
-        const f = @field(api, decl.name);
-        const method_action = @field(@TypeOf(router.*), d.method);
-        method_action(router, d.name, handler(f), .{});
-    }
-}
-
 pub fn addRoutes2(router: anytype) void {
     inline for (route_categories) |category| {
         inline for (category.routes) |route| {
-            const desc: Description = comptime .init2(@typeName(route));
+            const desc: Description = comptime .init(@typeName(route));
             const method_action = @field(@TypeOf(router.*), desc.method);
             method_action(router, desc.name, handlerRoute(route), .{});
         }

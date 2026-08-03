@@ -303,6 +303,18 @@ pub fn nodeIdleCpus(dumper: *Dumper, instance: *slurm.Node, ctx: Dumper.Context)
     try dumper.json.write(util.idle_cpus);
 }
 
+pub fn method(comptime name: [:0]const u8) Dumper.NewDumpFN {
+    const S = struct {
+        pub fn parse(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
+            const field = comptime ctx.requireField();
+            const val = @field(@TypeOf(instance.*), name)(instance);
+            try dumper.json.objectField(field.json_key);
+            try dumper.json.write(val);
+        }
+    };
+    return &S.parse;
+}
+
 pub fn userName(comptime field_name: [:0]const u8) Dumper.NewDumpFN {
     const S = struct {
         pub fn parse(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {

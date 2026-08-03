@@ -2249,6 +2249,132 @@ pub const User: SchemaComponent = .{
     },
 };
 
+pub const ControllerStatistics: SchemaComponent = .{
+    .api_type = slurm.slurmctld.Statistics,
+    .properties = &.{
+        .{
+            .api_name = "req_time",
+            .name = "request_time",
+            .description = "Time of request",
+            .serde = .integer(.timestamp),
+        },
+        .{
+            .api_name = "req_time_start",
+            .name = "request_time_start",
+            .description = "Time of request Start",
+            .serde = .integer(.timestamp),
+        },
+        .{
+            .name = "server_thread_count",
+            .description = "Number of active threads",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "agent_queue_size",
+            .description = "Number of queued outgoing RPC requests",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "agent_count",
+            .description = "Number of Agent threads",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "agent_thread_count",
+            .description = "Total amount of threads created by all agent threads",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "dbd_agent_queue_size",
+            .description = "Amount of messages queued for slurmdbd",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "gettimeofday_latency",
+            .description = "Latency of 1000 calls to gettimeofday syscall, in microseconds",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "schedule_cycle_max",
+            .description = "Max time of any scheduling cycle in microseconds, since last reset",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "schedule_cycle_last",
+            .description = "Time in microseconds for last scheduling cycle",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "schedule_cycle_sum",
+            .description = "Total run time of all scheduling cycles since last reset, in microseconds",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "schedule_cycle_sum",
+            .description = "Total run time of all scheduling cycles since last reset, in microseconds",
+            .serde = .integer(.native),
+        },
+        .{
+            .api_name = "schedule_cycle_counter",
+            .name = "schedule_cycles",
+            .description = "Number of scheduling cycles since last reset",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "schedule_cycle_mean",
+            .description = "Mean time for all scheduling cycles, in microseconds",
+            .serde = .{
+                .dump = ser.method("meanCycle"),
+                .parse = Parser.integer,
+                .json_type = .integer,
+            },
+            .extra = true,
+        },
+        .{
+            .name = "schedule_cycle_mean_depth",
+            .description = "Mean of number of jobs processed during scheduling",
+            .serde = .{
+                .dump = ser.method("meanDepthCycle"),
+                .parse = Parser.integer,
+                .json_type = .integer,
+            },
+            .extra = true,
+        },
+        .{
+            .name = "schedule_cycleis_per_minute",
+            .description = "Number of scheduling cycles performed per minute",
+            .serde = .{
+                .dump = ser.method("cyclesPerMinute"),
+                .parse = Parser.integer,
+                .json_type = .integer,
+            },
+            .extra = true,
+        },
+        .{
+            .name = "schedule_cycle_depth",
+            .description = "Total amount of jobs processed during scheduling",
+            .serde = .integer(.native),
+        },
+        // TODO:
+//      .{
+//          .name = "schedule_cycle_exit",
+//          .description = "schedule exit fields",
+//          .serde = .integer(.native),
+//      },
+        .{
+            .api_name = "schedule_queue_len",
+            .name = "schedule_queue_length",
+            .description = "Number of Jobs pending in queue",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "jobs_submitted",
+            .description = "Number of Jobs submitted",
+            .serde = .integer(.native),
+        },
+    },
+};
+
 pub const DBJobs:            SchemaComponent = .array(DBJob, .list);
 pub const DBSteps:           SchemaComponent = .array(DBStep, .list);
 pub const Coordinators:      SchemaComponent = .array(Coordinator, .list);
@@ -2270,6 +2396,29 @@ pub const NodeResponse =         GenericResponse("Node", "Node information");
 pub const PartitionResponse =    GenericResponse("Partition", "Partition information");
 pub const ReservationResponse =  GenericResponse("Reservation", "Reservation information");
 pub const DBJobResponse =        GenericResponse("DBJob", "Database Job Information");
+
+pub const ControllerStatisticsResponse: SchemaComponent = .{
+    .api_type = models.ControllerStatisticsResponse,
+    .properties = &.{
+        .{
+            .name = "statistics",
+            .description = "Controller statistics",
+            .serde = .string(.print),
+        },
+        .{
+            .name = "meta",
+            .description = "Metadata",
+            .ref = Meta,
+            .serde = .object(.native),
+        },
+        .{
+            .name = "error",
+            .description = "Errors",
+            .ref = Error,
+            .serde = .object(.native),
+        },
+    },
+};
 
 pub const JobScriptResponse: SchemaComponent = .{
     .api_type = models.JobScriptResponse,

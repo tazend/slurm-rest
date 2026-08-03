@@ -20,6 +20,12 @@ pub const PartitionResponse =         GenericResponse(openapi.Partition);
 pub const ReservationResponse =       GenericResponse(openapi.Reservation);
 pub const DBJobResponse =             GenericResponse(openapi.DBJob);
 
+pub const ControllerStatisticsResponse = struct {
+    statistics: ?[]const u8 = "{}",
+    @"error": ?Error = null,
+    meta: ?Meta = null,
+};
+
 pub const BaseResponse = struct {
     @"error": ?Error = null,
     meta: ?Meta = null,
@@ -82,7 +88,7 @@ pub const AssociationShort = struct {
     id: u32,
 };
 
-pub const JobBriefInfo = struct {
+pub const QueueSummary = struct {
     id: u32,
     state: ?[]const u8 = null,
     user_name: ?[]const u8 = null,
