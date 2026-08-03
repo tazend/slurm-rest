@@ -247,6 +247,42 @@ pub const Accounts: QueryParameterComponent = .{
     },
 };
 
+pub const QoS: QueryParameterComponent = .{
+    .api_type = slurm.db.QoS.Filter,
+    .parameters = &.{
+        .{
+            .api_name = "description_list",
+            .name = "descriptions",
+            .description = "Descriptions to filter for",
+            .parse = list,
+        },
+        .{
+            .api_name = "deleted",
+            .api_member = "flags",
+            .name = "with_deleted",
+            .description = "Whether to also show deleted QoS",
+            .parse = flags,
+        },
+        .{
+            .api_name = "id_list",
+            .name = "ids",
+            .description = "IDs to filter for",
+            .parse = list,
+        },
+        .{
+            .api_name = "name_list",
+            .name = "names",
+            .description = "Names to filter for",
+            .parse = list,
+        },
+//      .{
+//          .name = "preempt_mode",
+//          .description = "Preempt Mode to filter for",
+//          .parse = TODO,
+//      },
+    },
+};
+
 pub const Job: QueryParameterComponent = .{
     .api_type = slurm.db.Job.Filter,
     .parameters = &.{

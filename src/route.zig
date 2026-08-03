@@ -19,6 +19,7 @@ pub const route_categories = &.{
     @import("routes/db/jobs.zig"),
     @import("routes/db/users.zig"),
     @import("routes/db/associations.zig"),
+    @import("routes/db/qos.zig"),
 };
 
 pub const RequestContext = struct {

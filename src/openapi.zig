@@ -2647,6 +2647,11 @@ pub const JobsResponse: SchemaComponent = .{
     },
 };
 
+const qos = @import("openapi/schemas/qos.zig");
+pub const QoS = qos.QoS;
+pub const QoSArray = qos.QoSArray;
+pub const QoSResponse = qos.Response;
+
 const account = @import("openapi/schemas/account.zig");
 pub const Account = account.Account;
 pub const Accounts = account.Accounts;

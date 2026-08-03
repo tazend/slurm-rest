@@ -19,6 +19,7 @@ pub const NodeResponse =              GenericResponse(openapi.Node);
 pub const PartitionResponse =         GenericResponse(openapi.Partition);
 pub const ReservationResponse =       GenericResponse(openapi.Reservation);
 pub const DBJobResponse =             GenericResponse(openapi.DBJob);
+pub const QoSResponse =               GenericResponse(openapi.QoSArray);
 
 pub const ControllerStatisticsResponse = struct {
     statistics: ?[]const u8 = "{}",
