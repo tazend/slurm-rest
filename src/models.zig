@@ -20,6 +20,7 @@ pub const PartitionResponse =         GenericResponse(openapi.Partition);
 pub const ReservationResponse =       GenericResponse(openapi.Reservation);
 pub const DBJobResponse =             GenericResponse(openapi.DBJob);
 pub const QoSResponse =               GenericResponse(openapi.QoSArray);
+pub const QoSSingleResponse =         GenericResponse(openapi.QoS);
 
 pub const ControllerStatisticsResponse = struct {
     statistics: ?[]const u8 = "{}",
@@ -165,5 +166,11 @@ pub const NamePathParameter = struct {
     name: [:0]const u8,
 };
 
-
 pub const JobIDPathParameter = IDPathParameter(u32);
+
+pub fn Number(comptime T: type) type {
+    return struct {
+        value: ?T,
+        infinite: ?bool = null,
+    };
+}

@@ -16,7 +16,7 @@ source: std.json.Scanner,
 slurm_arena: std.heap.ArenaAllocator,
 
 pub const Context = struct {
-    field: ?openapi.Property = null,
+    field: ?[:0]const u8 = null,
     schema: openapi.SchemaComponent,
 };
 
@@ -35,12 +35,15 @@ pub fn parse2(comptime T: openapi.SchemaComponent, allocator: Allocator, text: [
         .source = std.json.Scanner.initCompleteInput(allocator, text),
         .slurm_arena = .init(slurm.slurm_allocator),
     };
-    var ret: T.api_type = undefined;
+    var ret: T.api_type = .{};
     const new_ctx: Context = .{
         .field = null,
         .schema = T,
     };
     try T.serde.parse(&parser, new_ctx, &ret);
+    if (T.api_type == slurm.Partition) {
+        std.debug.print("name sdsd: {?s}\n", .{ret.name});
+    }
     return ret;
 }
 
@@ -55,6 +58,16 @@ pub fn parseRequireSchema(comptime T: type, parser: *Parser) !T {
     return ret;
 }
 
+pub fn parseWithSchema(comptime S: openapi.SchemaComponent, parser: *Parser) anyerror!S.api_type {
+    var ret: S.api_type = undefined;
+    const new_ctx: Context = .{
+        .field = null,
+        .schema = S,
+    };
+    try S.serde.parse(parser, new_ctx, &ret);
+    return ret;
+}
+
 pub fn native(parser: *Parser, ctx: Context, r: anytype) !void {
     r.* = try std.json.innerParse(
         ctx.schema.api_type, parser.allocator, &parser.source,
@@ -62,8 +75,8 @@ pub fn native(parser: *Parser, ctx: Context, r: anytype) !void {
     });
 }
 
-pub fn unsupported(_: *Parser, _: Context, r: anytype) !void {
-    @compileError("Parsing for this Type is not supported: " ++ @typeName(@TypeOf(r)));
+pub fn unsupported(_: *Parser, ctx: Context, r: anytype) !void {
+    @compileError("Parsing '" ++ ctx.field.? ++ "' is not supported in type: " ++ @typeName(@TypeOf(r)));
 }
 
 pub fn noop(parser: *Parser, ctx: Context, r: anytype) !void {
@@ -95,9 +108,9 @@ pub fn arrayRaw(parser: *Parser) ![:0]const u8 {
 pub fn arrayContainerToList(parser: *Parser, ctx: Context, r: anytype) !void {
     if (.array_begin != try parser.source.next()) return error.UnexpectedToken;
 
-    var list = @field(r, ctx.field.?.name);
+    var list = @field(r, ctx.field.?);
     list = .init();
-    defer @field(r, ctx.field.?.name) = list;
+    defer @field(r, ctx.field.?) = list;
 
     while (true) {
         const T = baseType(@TypeOf(list)).ItemType;
@@ -113,12 +126,12 @@ pub fn arrayContainerToList(parser: *Parser, ctx: Context, r: anytype) !void {
 }
 
 pub fn array(parser: *Parser, ctx: Context, r: anytype) !void {
-    @field(r, ctx.field.?.name) = try arrayRaw(parser);
+    @field(r, ctx.field.?) = try arrayRaw(parser);
 }
 
 pub fn assocsShort(parser: *Parser, ctx: Context, r: anytype) !void {
     if (.array_begin != try parser.source.next()) return error.UnexpectedToken;
-    const field_name = ctx.field.?.api_name orelse ctx.field.?.name;
+    const field_name = ctx.field.?;
 
     var list = @field(r, field_name);
     list = .init();
@@ -143,28 +156,44 @@ pub fn assocsShort(parser: *Parser, ctx: Context, r: anytype) !void {
 }
 
 pub fn arrayBitflag(parser: *Parser, ctx: Context, r: anytype) !void {
-    const value = try std.json.innerParse(
-        []const []const u8, parser.allocator, &parser.source,
-        .{ .allocate = .alloc_always, .max_value_len = parser.source.input.len
-    });
-    @field(r, ctx.field.?.name) = .fromSlice(value);
+    const value = try innerParse([]const []const u8, parser);
+    @field(r, ctx.field.?) = .fromSlice(value);
 }
 
 pub fn string(parser: *Parser, ctx: Context, r: anytype) !void {
-    const value = try std.json.innerParse(
+    const name = try std.json.innerParse(
         [:0]const u8, parser.allocator, &parser.source,
         .{ .allocate = .alloc_always, .max_value_len = parser.source.input.len
     });
-    @field(r, ctx.field.?.name) = value;
+    @field(r, ctx.field.?) = name;
+}
+
+pub fn number(parser: *Parser, ctx: Context, r: anytype) !void {
+    const T = @TypeOf(@field(r, ctx.field.?));
+    const num = try parseWithSchema(openapi.Number(T), parser);
+    @field(r, ctx.field.?) = if (num.infinite) |_|
+        @field(slurm.common.Infinite, @typeName(T))
+    else if (num.value) |v|
+        v
+    else
+        @field(slurm.common.NoValue, @typeName(T));
+}
+
+pub fn @"enum"(parser: *Parser, ctx: Context, r: anytype) !void {
+    const T = @TypeOf(@field(r, ctx.field.?));
+    @field(r, ctx.field.?) = try innerParse(T, parser);
 }
 
 pub fn integer(parser: *Parser, ctx: Context, r: anytype) !void {
-    const T = @TypeOf(@field(r, ctx.field.?.name));
-    const value = try std.json.innerParse(
+    const T = @TypeOf(@field(r, ctx.field.?));
+    @field(r, ctx.field.?) = try innerParse(T, parser);
+}
+
+pub fn innerParse(comptime T: type, parser: *Parser) !T {
+    return try std.json.innerParse(
         T, parser.allocator, &parser.source,
         .{ .allocate = .alloc_always, .max_value_len = parser.source.input.len
     });
-    @field(r, ctx.field.?.name) = value;
 }
 
 pub fn dict(parser: *Parser, ctx: Context, r: anytype) !void {
@@ -192,7 +221,7 @@ pub fn dict(parser: *Parser, ctx: Context, r: anytype) !void {
         try writer.writeByte('=');
         try writer.writeAll(v);
     }
-    @field(r, ctx.field.?.name) = try kv_list.toOwnedSliceSentinel(0);
+    @field(r, ctx.field.?) = try kv_list.toOwnedSliceSentinel(0);
 
     // TODO: Maybe need to advance cursor and check for object_end
 }
@@ -209,6 +238,11 @@ pub fn container(parser: *Parser, ctx: Context, r: anytype) !void {
     const api_type_fields = @typeInfo(ctx.schema.api_type).@"struct".fields;
     var fields_seen: [api_type_fields.len]bool = @splat(false);
 
+    if (ctx.field) |f| {
+        @field(r, f) = try parseWithSchema(ctx.schema, parser);
+        return;
+    }
+
     if (.object_begin != try parser.source.next()) return error.UnexpectedToken;
     while (true) {
         const name_token: Token = try parser.source.nextAllocMax(parser.allocator, .alloc_if_needed, parser.source.input.len);
@@ -219,18 +253,42 @@ pub fn container(parser: *Parser, ctx: Context, r: anytype) !void {
                 if (fields_seen[i]) {
                     return error.DuplicateField;
                 }
+
+                std.debug.print("processing: {s}\n", .{prop.name});
                 const new_ctx: Context = .{
-                    .field = prop,
-                    .schema = ctx.schema,
+                    .field = prop.api_name orelse prop.name,
+                    .schema = prop.ref orelse ctx.schema,
                 };
-//                std.debug.print("processing: {s}\n", .{prop.name});
                 try prop.serde.parse(parser, new_ctx, r);
+                if (ctx.schema.api_type == slurm.Partition) {
+                    std.debug.print("name is: {?s}\n", .{r.name});
+                }
                 fields_seen[i] = true;
                 break;
             }
         } else {
             std.debug.print("unknown token: {s}\n", .{name_token.string});
             return error.UnknownField;
+        }
+    }
+
+    try fillDefaultStructValues(ctx.schema.api_type, r, &fields_seen);
+//  std.debug.print("token is {}\n", .{try parser.source.peekNextTokenType()});
+//  if (.object_end != try parser.source.next()) return error.UnexpectedToken;
+//  std.debug.print("token is {}\n", .{try parser.source.peekNextTokenType()});
+}
+
+fn fillDefaultStructValues(comptime T: type, r: *T, fields_seen: *[@typeInfo(T).@"struct".fields.len]bool) !void {
+    std.debug.print("fields seen: {any}\n", .{fields_seen});
+    inline for (@typeInfo(T).@"struct".fields, 0..) |field, i| {
+        if (!fields_seen[i]) {
+            if (field.defaultValue()) |default| {
+                @field(r, field.name) = default;
+            } else {
+                return error.MissingField;
+            }
+        } else {
+            std.debug.print("skipping set field: {s}\n", .{field.name});
         }
     }
 }

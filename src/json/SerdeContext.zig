@@ -28,6 +28,7 @@ parse: ParseFN,
 json_type: JSONType,
 json_array_type: ?JSONType = null,
 json_object_types: ?[]const JSONType = null,
+sx: Serde,
 
 // Serializer that should be invoked
 pub const ObjectTypes = enum {
@@ -36,6 +37,17 @@ pub const ObjectTypes = enum {
     node_state,
     number,
     number_zero_is_noval,
+};
+
+pub const Serde = union {
+    object: ObjectTypes,
+    string: StringTypes,
+    dict: DictionaryTypes,
+    integer: IntegerTypes,
+    number: void,
+    array: ArrayTypes,
+    boolean: BoolTypes,
+    @"null": void,
 };
 
 pub fn object(comptime T: ObjectTypes) SerdeContext {
@@ -50,11 +62,12 @@ pub fn object(comptime T: ObjectTypes) SerdeContext {
         .parse = switch (T) {
             .container => Parser.container,
             .native => Parser.native,
-            .node_state => Parser.unsupported,
-            .number => Parser.unsupported,
+            .node_state => Parser.container,
+            .number => Parser.number,
             .number_zero_is_noval => Parser.unsupported,
         },
         .json_type = .object,
+        .sx = .{ .object = T },
     };
 }
 
@@ -75,6 +88,7 @@ pub fn dict(comptime T: DictionaryTypes, comptime json_types: []const JSONType) 
         },
         .json_type = .object,
         .json_object_types = json_types,
+        .sx = .{ .dict = T },
     };
 }
 
@@ -87,12 +101,14 @@ pub const StringTypes = enum {
     user_name,
     step_id,
     sluid,
+    node_state_base,
+    @"enum",
 };
 
 pub fn string(comptime T: StringTypes) SerdeContext {
     return .{
         .dump = switch (T) {
-            .native => ser.native,
+            .native, .@"enum" => ser.native,
             .print => ser.printString,
             .job_stdout => ser.stdio("std_out"),
             .job_stdin => ser.stdio("std_in"),
@@ -100,9 +116,14 @@ pub fn string(comptime T: StringTypes) SerdeContext {
             .user_name => ser.userName("user_id"),
             .step_id => ser.stepIDString,
             .sluid => ser.sluid,
+            .node_state_base => ser.nodeStateBase,
         },
-        .parse = Parser.string,
+        .parse = switch (T) {
+            .@"enum" => Parser.@"enum",
+            inline else => Parser.string,
+        },
         .json_type = .string,
+        .sx = .{ .string = T },
     };
 }
 
@@ -130,10 +151,11 @@ pub fn integer(comptime T: IntegerTypes) SerdeContext {
             .job_memory_total => ser.jobMemoryTotal,
         },
         .parse = switch (T) {
-            .native => Parser.integer,
+            .native, .native_zero_is_noval => Parser.integer,
             inline else => Parser.unsupported,
         },
         .json_type = .integer,
+        .sx = .{ .integer = T },
     };
 }
 
@@ -165,6 +187,7 @@ pub const ArrayTypes = enum {
     csv,
     native,
     bitflag,
+    nested_bitflag,
 };
 
 pub fn array(comptime T: ArrayTypes) SerdeContext {
@@ -176,11 +199,12 @@ pub fn array(comptime T: ArrayTypes) SerdeContext {
             .integers => ser.arrayInt,
             .csv => ser.array,
             .native, .bitflag => ser.native,
+            .nested_bitflag => ser.nestedBitflag,
         },
         .parse = switch (T) {
             .csv => Parser.array,
             .native => Parser.native,
-            .bitflag => Parser.arrayBitflag,
+            .bitflag, .nested_bitflag => Parser.arrayBitflag,
             .list => Parser.arrayContainerToList,
             .assocs_short => Parser.assocsShort,
             else => Parser.noop,
@@ -191,21 +215,25 @@ pub fn array(comptime T: ArrayTypes) SerdeContext {
             .csv => .string,
             else => null,
         },
+        .sx = .{ .array = T },
     };
 }
 
 // Serializer that should be invoked
 pub const BoolTypes = enum {
     int,
+    native,
 };
 
 pub fn boolean(comptime T: BoolTypes) SerdeContext {
     return .{
         .dump = switch (T) {
             .int => ser.bool,
+            .native => ser.native,
         },
         .parse = Parser.noop,
         .json_type = .boolean,
+        .sx = .{ .boolean = T },
     };
 }
 
@@ -214,5 +242,6 @@ pub fn noop() SerdeContext {
         .dump = ser.noop,
         .parse = Parser.noop,
         .json_type = .null,
+        .sx = .{ .null = {} },
     };
 }

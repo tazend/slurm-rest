@@ -116,6 +116,40 @@ pub const Error: SchemaComponent = .{
     },
 };
 
+pub const NumberU64: SchemaComponent = .{
+    .api_type = models.Number(u64),
+    .properties = &.{
+        .{
+            .name = "value",
+            .description = "Number value",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "infinite",
+            .description = "Whether the number is infinite or not",
+            .serde = .boolean(.native),
+        },
+    },
+};
+
+pub fn Number(comptime T: type) SchemaComponent {
+    return .{
+        .api_type = models.Number(T),
+        .properties = &.{
+            .{
+                .name = "value",
+                .description = "Number value",
+                .serde = .integer(.native),
+            },
+            .{
+                .name = "infinite",
+                .description = "Whether the number is infinite or not",
+                .serde = .boolean(.native),
+            },
+        },
+    };
+}
+
 pub const SlurmVersion: SchemaComponent = .{
     .api_type = models.SlurmVersion,
     .properties = &.{
@@ -222,7 +256,7 @@ pub const Partition: SchemaComponent = .{
         .{
             // TODO: Needs parsing
             .name = "def_mem_per_cpu",
-            .description = "Suspend Timeout",
+            .description = "Default Memory per CPU",
             .serde = .object(.number),
         },
         .{
@@ -331,7 +365,7 @@ pub const Partition: SchemaComponent = .{
             // TODO: This is an enum
             .name = "state",
             .description = "Partition State",
-            .serde = .string(.native),
+            .serde = .string(.@"enum"),
 //            .ref = slurm.Partition.State,
         },
         .{
@@ -971,6 +1005,7 @@ pub const Reservation: SchemaComponent = .{
                 .dump = ser.resCoreSpec,
                 .parse = Parser.unsupported,
                 .json_type = .object,
+                .sx = .{ .object = .native },
             },
         },
         .{
@@ -1758,14 +1793,96 @@ pub const NodeUpdatable: SchemaComponent = .{
             .serde = .array(.bitflag),
         },
         .{
+            .name = "cert_token",
+            .description = "Cert Token",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "extra",
+            .description = "Arbitrary string attached to the Node",
+            .serde = .string(.native),
+        },
+        .{
             .name = "features",
-            .description = "List of features",
+            .description = "List of available features",
+            .serde = .array(.csv),
+        },
+        .{
+            .name = "features_act",
+            .description = "List of active features",
             .serde = .array(.csv),
         },
         .{
             .name = "gres",
             .description = "List of GRES",
             .serde = .dict(.key_value, &.{ .string }),
+        },
+        .{
+            .name = "instance_id",
+            .description = "List of Instance Ids",
+            .serde = .array(.csv),
+        },
+        .{
+            .name = "instance_type",
+            .description = "List of Instance Types",
+            .serde = .array(.csv),
+        },
+        .{
+            .name = "address",
+            .description = "List of Node addresses",
+            .serde = .array(.csv),
+        },
+        .{
+            .name = "hostname",
+            .description = "List of Node Hostnames",
+            .serde = .array(.csv),
+        },
+        .{
+            .name = "names",
+            .description = "List of Node Names to update",
+            .serde = .array(.csv),
+        },
+        .{
+            .name = "state",
+            .description = "New state to assign to the Node",
+            .ref = NodeState,
+            .serde = .object(.container),
+        },
+        .{
+            .name = "reason",
+            .description = "Reason for the Node being down or drained",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "reason_uid",
+            .description = "UID of the User that set the Reason",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "weight",
+            .description = "Node weight",
+            .serde = .integer(.native),
+        },
+        .{
+            .name = "resume_after",
+            .description = "Resume after this amount of seconds",
+            .serde = .integer(.native),
+        },
+    },
+};
+
+pub const NodeState: SchemaComponent = .{
+    .api_type = slurm.Node.State,
+    .properties = &.{
+        .{
+            .name = "base",
+            .description = "The base state",
+            .serde = .string(.@"enum"),
+        },
+        .{
+            .name = "flags",
+            .description = "The state flags",
+            .serde = .array(.nested_bitflag),
         },
     },
 };
@@ -2327,6 +2444,7 @@ pub const ControllerStatistics: SchemaComponent = .{
                 .dump = ser.method("meanCycle"),
                 .parse = Parser.integer,
                 .json_type = .integer,
+                .sx = .{ .integer = .native },
             },
             .extra = true,
         },
@@ -2337,6 +2455,7 @@ pub const ControllerStatistics: SchemaComponent = .{
                 .dump = ser.method("meanDepthCycle"),
                 .parse = Parser.integer,
                 .json_type = .integer,
+                .sx = .{ .integer = .native },
             },
             .extra = true,
         },
@@ -2347,6 +2466,7 @@ pub const ControllerStatistics: SchemaComponent = .{
                 .dump = ser.method("cyclesPerMinute"),
                 .parse = Parser.integer,
                 .json_type = .integer,
+                .sx = .{ .integer = .native },
             },
             .extra = true,
         },
@@ -2651,6 +2771,7 @@ const qos = @import("openapi/schemas/qos.zig");
 pub const QoS = qos.QoS;
 pub const QoSArray = qos.QoSArray;
 pub const QoSResponse = qos.Response;
+pub const QoSSingleResponse = qos.SingleResponse;
 
 const account = @import("openapi/schemas/account.zig");
 pub const Account = account.Account;

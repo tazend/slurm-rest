@@ -160,7 +160,7 @@ pub fn arrayInt(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     });
 }
 
-fn Number(comptime T: type) type {
+pub fn Number(comptime T: type) type {
     return struct {
         value: ?T,
         infinite: ?bool = null,
@@ -400,6 +400,28 @@ pub fn native(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
     const value = @field(instance, field.name);
     try dumper.json.objectField(field.json_key);
     try dumper.json.write(value);
+}
+
+pub fn enumInPackedStruct(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
+    const field = comptime ctx.requireField();
+    const T = @typeInfo(@TypeOf(instance)).@"struct".backing_integer.?;
+    if (slurm.common.numberHasValue(@as(T, @bitCast(instance)))) {
+        return native(dumper, instance, ctx);
+    } else {
+        try dumper.json.objectField(field.json_key);
+        try dumper.json.write("unknown");
+    }
+}
+
+pub fn nestedBitflag(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {
+    const field = comptime ctx.requireField();
+    const T = @typeInfo(@TypeOf(instance)).@"struct".backing_integer.?;
+    if (slurm.common.numberHasValue(@as(T, @bitCast(instance)))) {
+        return native(dumper, instance, ctx);
+    } else {
+        try dumper.json.objectField(field.json_key);
+        try dumper.json.print("[]", .{});
+    }
 }
 
 pub fn printString(dumper: *Dumper, instance: anytype, ctx: Dumper.Context) !void {

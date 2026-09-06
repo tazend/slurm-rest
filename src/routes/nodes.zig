@@ -14,6 +14,7 @@ const path_params = @import("../openapi/parameters/path.zig");
 pub const routes = &.{
     @"GET /nodes",
     @"GET /nodes/:name",
+    @"POST /nodes",
 };
 
 pub const @"GET /nodes" = struct {
@@ -61,5 +62,31 @@ pub const @"GET /nodes/:name" = struct {
         var node = try slurm.node.loadOne(ctx.parameters.path.name);
         defer node.deinit();
         return .{ .data = try dump(ctx.arena, &node) };
+    }
+};
+
+pub const @"POST /nodes" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "Nodes",
+        },
+        .summary = "Update Nodes",
+        .description = "Updates Nodes",
+        .operationId = "updateNodes",
+        .response = .{
+            .ref = openapi.BaseResponse,
+            .description = "TODO",
+        },
+        .requestBody = openapi.NodeUpdatable,
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
+//      std.debug.print("state: {d}\n", .{@as(u32, @bitCast(ctx.body.state))});
+//      std.debug.print("flags: {}\n", .{ctx.body.state.flags});
+//      std.debug.print("state all: {}\n", .{ctx.body.state});
+        const data = try dump(ctx.arena, ctx.body);
+        std.debug.print("{s}\n", .{data});
+        try slurm.node.update(ctx.body);
+        return .{};
     }
 };

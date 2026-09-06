@@ -42,3 +42,32 @@ pub const @"GET /db/qos" = struct {
         return .{ .data = try dump(ctx.arena, resp)};
     }
 };
+
+pub const @"GET /db/qos/:name" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "QoS",
+        },
+        .summary = "Get single Database QoS",
+        .description = "Get single QoS in the Database",
+        .operationId = "getOneQoS",
+        .response = .{
+            .ref = openapi.QoSSingleResponse,
+            .description = "TODO",
+        },
+        .parameters = .{
+            .path = path_params.QoS,
+        },
+        .requirements = .{
+            .db_conn = true,
+            .tres = true,
+        }
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.QoSResponse {
+        _ = ctx;
+//      const resp = try slurm.db.qos.load(ctx.db_conn, ctx.parameters.query);
+//      defer resp.deinit();
+//      return .{ .data = try dump(ctx.arena, resp)};
+    }
+};

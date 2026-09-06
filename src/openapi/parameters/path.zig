@@ -49,6 +49,7 @@ pub const JobIDPathParameter: Parameters = .{
 };
 
 pub const Node = NamePathParameter("Node");
+pub const QoS = NamePathParameter("QoS");
 pub const Partition = NamePathParameter("Partition");
 pub const Reservation = NamePathParameter("Reservation");
 pub const AccountParameter = NamePathParameter("Account");

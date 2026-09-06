@@ -12,6 +12,7 @@ pub const QoS: SchemaComponent = .{
 
 pub const QoSArray: SchemaComponent = .array(QoS, .list);
 pub const Response = openapi.GenericResponse("QoSArray", "List of QoS");
+pub const SingleResponse = openapi.GenericResponse("QoS", "Database QoS Information");
 
 pub const Base: []const Property = &.{
     .{
@@ -19,11 +20,11 @@ pub const Base: []const Property = &.{
         .description = "Arbitrary Description for the QoS",
         .serde = .string(.native),
     },
-//  .{
-//      .name = "flags",
-//      .description = "QoS Flags",
-//      .serde = .array(.bitflag),
-//  },
+    .{
+        .name = "flags",
+        .description = "QoS Flags",
+        .serde = .array(.bitflag),
+    },
     .{
         .name = "id",
         .description = "Unique QoS ID",
