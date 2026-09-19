@@ -13,6 +13,8 @@ allocator: Allocator,
 source: std.json.Scanner,
 slurm_arena: std.heap.ArenaAllocator,
 
+const TokenType = @typeInfo(Token).@"union".tag_type.?;
+
 pub fn parse(comptime S: openapi.SchemaComponent, allocator: Allocator, text: []const u8) !S.api_type {
     var parser: Parser = .{
         .allocator = allocator,
@@ -97,7 +99,7 @@ pub fn parseProperty(self: *Parser, r: anytype, comptime P: openapi.Property) an
 }
 
 pub fn dict(self: *Parser) ![:0]const u8 {
-    if (.object_begin != try self.source.next()) return error.UnexpectedToken;
+    try self.expectNextToken(.object_begin);
 
     var kv_list: std.Io.Writer.Allocating = .init(self.allocator);
     defer kv_list.deinit();
@@ -123,7 +125,7 @@ pub fn dict(self: *Parser) ![:0]const u8 {
 }
 
 pub fn arrayStrings(self: *Parser) ![:0]const u8 {
-    if (.array_begin != try self.source.next()) return error.UnexpectedToken;
+    try self.expectNextToken(.array_begin);
 
     var aw: std.Io.Writer.Allocating = .init(self.allocator);
     defer aw.deinit();
@@ -140,10 +142,9 @@ pub fn arrayStrings(self: *Parser) ![:0]const u8 {
 }
 
 pub fn assocsShort(self: *Parser) !*slurm.db.List(*slurm.db.Association) {
-    if (.array_begin != try self.source.next()) return error.UnexpectedToken;
+    try self.expectNextToken(.array_begin);
 
     var list: *slurm.db.List(*slurm.db.Association) = .init();
-
     while (true) {
         const T = baseType(@TypeOf(list)).ItemType;
         const TBase = baseType(T);
@@ -159,16 +160,14 @@ pub fn assocsShort(self: *Parser) !*slurm.db.List(*slurm.db.Association) {
 
         if (.array_end == try self.source.peekNextTokenType()) break;
     }
-    if (.array_end != try self.source.next()) return error.UnexpectedToken;
-
+    try self.expectNextToken(.array_end);
     return list;
 }
 
 pub fn arrayContainerToList(self: *Parser, comptime S: openapi.SchemaComponent) !*S.api_type {
-    if (.array_begin != try self.source.next()) return error.UnexpectedToken;
+    try self.expectNextToken(.array_begin);
 
     var list: *S.api_type = .init();
-
     while (true) {
         const T = baseType(@TypeOf(list)).ItemType;
         const TBase = baseType(T);
@@ -179,8 +178,7 @@ pub fn arrayContainerToList(self: *Parser, comptime S: openapi.SchemaComponent) 
 
         if (.array_end == try self.source.peekNextTokenType()) break;
     }
-    if (.array_end != try self.source.next()) return error.UnexpectedToken;
-
+    try self.expectNextToken(.array_end);
     return list;
 }
 
@@ -208,10 +206,14 @@ fn nextFieldName(self: *Parser) !?[]const u8 {
     return fieldNameFromToken(token);
 }
 
+fn expectNextToken(self: *Parser, token: TokenType) !void {
+    if (token != try self.source.next()) return error.UnexpectedToken;
+}
+
 pub fn container(self: *Parser, r: anytype, comptime S: openapi.SchemaComponent) anyerror!void {
     var fields_seen: [S.properties.len]bool = @splat(false);
 
-    if (.object_begin != try self.source.next()) return error.UnexpectedToken;
+    try self.expectNextToken(.object_begin);
     while (true) {
         const field_name = try self.nextFieldName() orelse break;
         inline for (S.properties, 0..) |prop, i| {
