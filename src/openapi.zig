@@ -1196,9 +1196,6 @@ pub const Job: SchemaComponent = .{
             .description = "Multi-Category Security Label",
             .serde = .string(.native),
         },
-
-
-
         .{
             .api_name = "pn_min_memory",
             .name = "memory",
@@ -1326,6 +1323,7 @@ pub const Job: SchemaComponent = .{
             .serde = .string(.user_name),
         },
         .{
+            .api_name = "memoryTotal",
             .name = "memory_total",
             .description = "Total memory allocated or requested by the Job",
             .serde = .integer(.job_memory_total),
@@ -1546,6 +1544,7 @@ pub const Step: SchemaComponent = .{
             .serde = .integer(.native),
         },
         .{
+            // TODO: Just specify the name of the field for api_name thatr contains the uid
             .name = "user_name",
             .description = "User Name for the Step",
             .serde = .string(.user_name),
@@ -1557,6 +1556,7 @@ pub const StepID: SchemaComponent = .{
     .api_type = slurm.Step.ID,
     .properties = &.{
         .{
+            .api_name = "parseSluid",
             .name = "sluid",
             .description = "Sluid",
             .serde = .string(.sluid),
@@ -1573,6 +1573,7 @@ pub const StepID: SchemaComponent = .{
             .serde = .integer(.native_zero_is_noval),
         },
         .{
+            .api_name = "toStrBuf",
             .name = "step_id",
             .description = "Step ID",
             .serde = .string(.step_id),
@@ -1793,6 +1794,7 @@ pub const Node: SchemaComponent = .{
             .name = "energy",
             .description = "Energy data of the node",
             .serde = .object(.container),
+            .ref = AccountingGatherEnergy,
         },
         .{
             .name = "extra",
@@ -1998,17 +2000,19 @@ pub const Node: SchemaComponent = .{
             .serde = .string(.native),
         },
         .{
+            .api_name = "utilization",
             .name = "idle_cpus",
             .description = "Idle CPUs of the Node",
             .serde = .integer(.node_idle_cpus),
             .extra = true,
         },
-//      .{
-//          .name = "reason_user",
-//          .description = "Name of the User who set the Reason",
-//          .serde = .integer(.node_idle_cpus),
-//          .extra = true,
-//      },
+        .{
+            .api_name = "reason_uid",
+            .name = "reason_user",
+            .description = "Name of the User who set the Reason",
+            .serde = .string(.reason_user),
+            .extra = true,
+        },
     },
 };
 

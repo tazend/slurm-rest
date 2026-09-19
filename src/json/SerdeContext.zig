@@ -82,9 +82,9 @@ pub const StringTypes = enum {
     job_stdin,
     job_stderr,
     user_name,
+    reason_user,
     step_id,
     sluid,
-    node_state_base,
     @"enum",
 };
 
@@ -97,9 +97,9 @@ pub fn string(comptime T: StringTypes) SerdeContext {
             .job_stdin => ser.stdio("std_in"),
             .job_stderr => ser.stdio("std_err"),
             .user_name => ser.userName("user_id"),
+            .reason_user => ser.userName("reason_uid"),
             .step_id => ser.stepIDString,
             .sluid => ser.sluid,
-            .node_state_base => ser.nodeStateBase,
         },
         .json_type = .string,
         .sx = .{ .string = T },
@@ -159,6 +159,7 @@ pub const ArrayTypes = enum {
     integers,
     csv,
     native,
+    container,
     bitflag,
     nested_bitflag,
 };
@@ -171,7 +172,7 @@ pub fn array(comptime T: ArrayTypes) SerdeContext {
             .assocs_short => ser.assocsShort,
             .integers => ser.arrayInt,
             .csv => ser.array,
-            .native, .bitflag => ser.native,
+            .native, .bitflag, .container => ser.native,
             .nested_bitflag => ser.nestedBitflag,
         },
         .json_type = .array,
