@@ -204,203 +204,6 @@ pub const Meta: SchemaComponent = .{
     },
 };
 
-pub const Partition: SchemaComponent = .{
-    .api_type = slurm.Partition,
-    .ignored_fields = &.{
-        "node_inx", "job_defaults_list",
-    },
-    .properties = &.{
-        .{
-            .name = "allow_alloc_nodes",
-            .description = "Names of Nodes from which can be submitted to this Partition",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "allow_accounts",
-            .description = "Accounts allowed to run in this Partition",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "allow_groups",
-            .description = "Names of groups that can run in this Partition",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "allow_qos",
-            .description = "Names of QoS that can run in this Partition",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "alternate",
-            .description = "Alternate Partition name",
-            .serde = .string(.native),
-        },
-        .{
-            .api_name = "billing_weights_str",
-            .name = "tres_billing_weights",
-            .description = "TRES Billing Weights",
-            .serde = .dict(.key_value, &.{ .integer }),
-        },
-        .{
-            .name = "cluster_name",
-            .description = "Name of the Cluster this Partition belongs to",
-            .serde = .string(.native),
-        },
-        .{
-            .api_name = "cr_type",
-            .name = "select_type",
-            .description = "Select Plugin",
-            .serde = .array(.bitflag),
-        },
-        .{
-            // TODO: Needs parsing
-            .name = "def_mem_per_cpu",
-            .description = "Default Memory per CPU",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "default_time",
-            .description = "Default Time Limit",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "deny_accounts",
-            .description = "Accounts that can't submit to this Partition",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "deny_qos",
-            .description = "Names of QoS that cannot run in this Partition",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "flags",
-            .description = "Partition Flags",
-            .serde = .array(.bitflag),
-        },
-        .{
-            .api_name = "job_defaults_str",
-            .name = "job_defaults",
-            .description = "Job defaults",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "max_cpus_per_node",
-            .description = "Maximum CPUs per Node",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "max_cpus_per_socket",
-            .description = "Maximum CPUs per Socket",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "max_mem_per_cpu",
-            .description = "Maximum Memory per CPU",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "max_nodes",
-            .description = "Maximum Nodes",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "max_time",
-            .description = "Maximum Time Limit",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "min_nodes",
-            .description = "Minimum Nodes",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "name",
-            .description = "Name of the Partition",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "nodes",
-            .description = "Nodes configured in this Partition",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "nodesets",
-            .description = "Nodesets configured for this Partition",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "over_time_limit",
-            .description = "Over Time Limit",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "preempt_mode",
-            .description = "Preemption Mode",
-            .serde = .array(.bitflag),
-        },
-        .{
-            .name = "priority_job_factor",
-            .description = "Priority Job Factor configured",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "priority_tier",
-            .description = "Priority Tier of the Partition",
-            .serde = .object(.number),
-        },
-        .{
-            .api_name = "qos_char",
-            .name = "assigned_qos",
-            .description = "QoS assigned to this Partition",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "resume_timeout",
-            .description = "Resume Timeout",
-            .serde = .object(.number),
-        },
-        .{
-            // TODO: This is an enum
-            .name = "state",
-            .description = "Partition State",
-            .serde = .string(.@"enum"),
-//            .ref = slurm.Partition.State,
-        },
-        .{
-            .name = "suspend_time",
-            .description = "Suspend Time",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "suspend_timeout",
-            .description = "Suspend Timeout",
-            .serde = .object(.number),
-        },
-        .{
-            .name = "topology_name",
-            .description = "Name of the Topology used",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "total_cpus",
-            .description = "Total amount of CPUs available",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "total_nodes",
-            .description = "Total amount of Nodes available",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .api_name = "tres_fmt_str",
-            .name = "configured_tres",
-            .description = "Total TRES configured",
-            .serde = .dict(.key_value, &.{ .string, .integer }),
-        },
-    },
-};
-
 pub const Coordinator: SchemaComponent = .{
     .api_type = slurm.db.Coordinator,
     .properties = &.{
@@ -2534,7 +2337,6 @@ pub const Users:             SchemaComponent = .array(User, .list);
 pub const WCKeys:            SchemaComponent = .array(WCKey, .list);
 pub const Jobs:              SchemaComponent = .array(Job, .load_response);
 pub const Reservations:      SchemaComponent = .array(Reservation, .load_response);
-pub const Partitions:        SchemaComponent = .array(Partition, .load_response);
 pub const Nodes:             SchemaComponent = .array(Node, .load_response);
 pub const Steps:             SchemaComponent = .array(Step, .load_response);
 
@@ -2545,7 +2347,6 @@ pub const UsersResponse =        GenericResponse("Users", "List of Database User
 pub const WCKeysResponse =       GenericResponse("WCKeys", "List of Database WCKeys");
 pub const JobResponse =          GenericResponse("Job", "Job information");
 pub const NodeResponse =         GenericResponse("Node", "Node information");
-pub const PartitionResponse =    GenericResponse("Partition", "Partition information");
 pub const ReservationResponse =  GenericResponse("Reservation", "Reservation information");
 pub const DBJobResponse =        GenericResponse("DBJob", "Database Job Information");
 
@@ -2671,35 +2472,6 @@ pub const StepsResponse: SchemaComponent = .{
     },
 };
 
-pub const PartitionsResponse: SchemaComponent = .{
-    .api_type = models.PartitionsResponse,
-    .properties = &.{
-        .{
-            .name = "last_update",
-            .description = "Time of last update of this data",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .name = "partitions",
-            .description = "List of Partitions",
-            .ref = Partitions,
-            .serde = .string(.print),
-        },
-        .{
-            .name = "meta",
-            .description = "Metadata",
-            .ref = Meta,
-            .serde = .object(.native),
-        },
-        .{
-            .name = "error",
-            .description = "Errors",
-            .ref = Error,
-            .serde = .object(.native),
-        },
-    },
-};
-
 pub const ReservationsResponse: SchemaComponent = .{
     .api_type = models.ReservationsResponse,
     .properties = &.{
@@ -2768,6 +2540,12 @@ pub const QoS = qos.QoS;
 pub const QoSArray = qos.QoSArray;
 pub const QoSResponse = qos.Response;
 pub const QoSSingleResponse = qos.SingleResponse;
+
+pub const part = @import("openapi/schemas/partition.zig");
+pub const Partition = part.Partition;
+pub const Partitions = part.Array;
+pub const PartitionsResponse = part.Response;
+pub const PartitionResponse = part.SingleResponse;
 
 const account = @import("openapi/schemas/account.zig");
 pub const Account = account.Account;
