@@ -4,14 +4,9 @@ const Stringify = std.json.Stringify;
 const ser = @import("new_dump_methods.zig");
 const openapi = @import("../openapi.zig");
 const Dumper = @import("Dumper.zig");
-const Parser = @import("Parser.zig");
 
 const SerdeContext = @This();
 const DumpFN = Dumper.NewDumpFN;
-const ParseFN = Parser.ParseFN;
-
-//pub const DumpFN = *const fn(*Stringify, anytype, anytype, anytype) anyerror!void;
-//pub const ParseFN = *const fn(*Stringify, anytype, anytype, anytype) anyerror!void;
 
 pub const JSONType = enum {
     object,
@@ -24,7 +19,6 @@ pub const JSONType = enum {
 };
 
 dump: DumpFN,
-parse: ParseFN,
 json_type: JSONType,
 json_array_type: ?JSONType = null,
 json_object_types: ?[]const JSONType = null,
@@ -59,13 +53,6 @@ pub fn object(comptime T: ObjectTypes) SerdeContext {
             .number => ser.number,
             .number_zero_is_noval => ser.numberNoValue,
         },
-        .parse = switch (T) {
-            .container => Parser.container,
-            .native => Parser.native,
-            .node_state => Parser.container,
-            .number => Parser.number,
-            .number_zero_is_noval => Parser.unsupported,
-        },
         .json_type = .object,
         .sx = .{ .object = T },
     };
@@ -81,10 +68,6 @@ pub fn dict(comptime T: DictionaryTypes, comptime json_types: []const JSONType) 
         .dump = switch (T) {
             .gres_count => ser.gresDict,
             .key_value => ser.dict,
-        },
-        .parse = switch (T) {
-            .key_value => Parser.dict,
-            else => Parser.noop,
         },
         .json_type = .object,
         .json_object_types = json_types,
@@ -118,10 +101,6 @@ pub fn string(comptime T: StringTypes) SerdeContext {
             .sluid => ser.sluid,
             .node_state_base => ser.nodeStateBase,
         },
-        .parse = switch (T) {
-            .@"enum" => Parser.@"enum",
-            inline else => Parser.string,
-        },
         .json_type = .string,
         .sx = .{ .string = T },
     };
@@ -150,30 +129,24 @@ pub fn integer(comptime T: IntegerTypes) SerdeContext {
             .job_memory => ser.jobMemory,
             .job_memory_total => ser.jobMemoryTotal,
         },
-        .parse = switch (T) {
-            .native, .native_zero_is_noval => Parser.integer,
-            inline else => Parser.unsupported,
-        },
         .json_type = .integer,
         .sx = .{ .integer = T },
     };
 }
 
 pub fn native(comptime T: JSONType) SerdeContext {
-    var dump: SerdeContext = switch (T) {
+    const dump: SerdeContext = switch (T) {
         .array => .array(.native),
         .object => .object(.native),
         .string => .string(),
         else => @compileLog("Unsupported native JSONType " ++ @typeName(T)),
     };
-    dump.parse = Parser.unsupported;
     return dump;
 }
 
 pub fn unsupported() SerdeContext {
     return .{
         .dump = ser.unsupported,
-        .parse = Parser.unsupported,
         .json_type = .object,
     };
 }
@@ -201,14 +174,6 @@ pub fn array(comptime T: ArrayTypes) SerdeContext {
             .native, .bitflag => ser.native,
             .nested_bitflag => ser.nestedBitflag,
         },
-        .parse = switch (T) {
-            .csv => Parser.array,
-            .native => Parser.native,
-            .bitflag, .nested_bitflag => Parser.arrayBitflag,
-            .list => Parser.arrayContainerToList,
-            .assocs_short => Parser.assocsShort,
-            else => Parser.noop,
-        },
         .json_type = .array,
         .json_array_type = switch (T) {
             .integers => .integer,
@@ -231,7 +196,6 @@ pub fn boolean(comptime T: BoolTypes) SerdeContext {
             .int => ser.bool,
             .native => ser.native,
         },
-        .parse = Parser.noop,
         .json_type = .boolean,
         .sx = .{ .boolean = T },
     };
@@ -240,7 +204,6 @@ pub fn boolean(comptime T: BoolTypes) SerdeContext {
 pub fn noop() SerdeContext {
     return .{
         .dump = ser.noop,
-        .parse = Parser.noop,
         .json_type = .null,
         .sx = .{ .null = {} },
     };

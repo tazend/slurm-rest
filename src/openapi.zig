@@ -5,7 +5,6 @@ const JSONType = SerdeContext.JSONType;
 const slurm = @import("slurm");
 const models = @import("models.zig");
 const ser = @import("json/new_dump_methods.zig");
-const Parser = @import("json/Parser.zig");
 
 /// A specific Member or "Property" of a Schema Component
 pub const Property = struct {
@@ -1003,7 +1002,6 @@ pub const Reservation: SchemaComponent = .{
             .description = "Cores Reserved for the System",
             .serde = .{
                 .dump = ser.resCoreSpec,
-                .parse = Parser.unsupported,
                 .json_type = .object,
                 .sx = .{ .object = .native },
             },
@@ -2443,7 +2441,6 @@ pub const ControllerStatistics: SchemaComponent = .{
             .description = "Mean time for all scheduling cycles, in microseconds",
             .serde = .{
                 .dump = ser.method("meanCycle"),
-                .parse = Parser.integer,
                 .json_type = .integer,
                 .sx = .{ .integer = .native },
             },
@@ -2454,7 +2451,6 @@ pub const ControllerStatistics: SchemaComponent = .{
             .description = "Mean of number of jobs processed during scheduling",
             .serde = .{
                 .dump = ser.method("meanDepthCycle"),
-                .parse = Parser.integer,
                 .json_type = .integer,
                 .sx = .{ .integer = .native },
             },
@@ -2465,7 +2461,6 @@ pub const ControllerStatistics: SchemaComponent = .{
             .description = "Number of scheduling cycles performed per minute",
             .serde = .{
                 .dump = ser.method("cyclesPerMinute"),
-                .parse = Parser.integer,
                 .json_type = .integer,
                 .sx = .{ .integer = .native },
             },

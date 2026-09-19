@@ -3,11 +3,10 @@ const slurm = @import("slurm");
 const httpz = @import("httpz");
 const Handler = @import("main.zig").Handler;
 const Dumper = @import("json/Dumper.zig");
-const Parser = @import("json/Parser.zig");
 const openapi = @import("openapi.zig");
 const params_path = @import("openapi/parameters/path.zig");
 const params_query = @import("query_params.zig");
-const NewParser = @import("json/new_parser.zig");
+const Parser = @import("json/Parser.zig");
 
 pub const route_categories = &.{
     @import("routes/jobs.zig"),
@@ -105,7 +104,7 @@ pub fn RouteData(comptime R: type) type {
                     .path = if (Meta.parameters.path) |p| try p.init(ctx) else {},
                     .query = if (Meta.parameters.query) |q| try q.init(ctx) else {},
                 },
-                .body = if (Meta.requestBody) |b| try NewParser.parse(b, ctx.arena, ctx.req.body() orelse return error.EmptyBody),
+                .body = if (Meta.requestBody) |b| try Parser.parse(b, ctx.arena, ctx.req.body() orelse return error.EmptyBody),
                 .req = ctx.req,
                 .res = ctx.res,
                 .arena = ctx.arena,
