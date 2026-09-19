@@ -86,7 +86,7 @@ pub const @"POST /nodes" = struct {
 //      std.debug.print("state all: {}\n", .{ctx.body.state});
         const data = try dump(ctx.arena, ctx.body);
         std.debug.print("{s}\n", .{data});
-        try slurm.node.update(ctx.body);
+        //try slurm.node.update(ctx.body);
         return .{};
     }
 };

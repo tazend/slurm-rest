@@ -39,7 +39,7 @@ const OtherAccountProperties: []const Property = &.{
         .name = "coordinators",
         .description = "List of Coordinators",
         .serde = .array(.list),
-        .ref = openapi.Coordinator,
+        .ref = openapi.Coordinators,
     },
 };
 

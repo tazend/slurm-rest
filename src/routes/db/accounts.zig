@@ -103,22 +103,8 @@ pub const @"POST /db/accounts" = struct {
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
-        std.debug.print("{?s}\n", .{ctx.body.name});
-        std.debug.print("{?s}\n", .{ctx.body.organization});
-        if (ctx.body.coordinators) |c| {
-            var it = c.iter();
-            while (it.next()) |item| {
-                std.debug.print("coord name: {?s}\n", .{item.name});
-            }
-        }
-        if (ctx.body.assoc_list) |c| {
-            var it = c.iter();
-            while (it.next()) |item| {
-                std.debug.print("user: {?s}\n", .{item.user});
-                std.debug.print("account: {?s}\n", .{item.acct});
-            }
-        }
-        std.debug.print("flags: {}\n", .{ctx.body.flags});
+        const data = try dump(ctx.arena, ctx.body);
+        std.debug.print("{s}\n", .{data});
         return .{};
     }
 };

@@ -39,7 +39,7 @@ pub const ObjectTypes = enum {
     number_zero_is_noval,
 };
 
-pub const Serde = union {
+pub const Serde = union(enum) {
     object: ObjectTypes,
     string: StringTypes,
     dict: DictionaryTypes,

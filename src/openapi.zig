@@ -1885,6 +1885,7 @@ pub const NodeState: SchemaComponent = .{
             .serde = .array(.nested_bitflag),
         },
     },
+    .serde = .object(.container),
 };
 
 pub const Node: SchemaComponent = .{

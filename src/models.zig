@@ -83,11 +83,11 @@ pub const Error = struct {
 };
 
 pub const AssociationShort = struct {
-    account: ?slurm.CStr,
-    cluster: ?slurm.CStr,
-    partition: ?slurm.CStr,
-    user: ?slurm.CStr,
-    id: u32,
+    account: ?slurm.CStr = null,
+    cluster: ?slurm.CStr = null,
+    partition: ?slurm.CStr = null,
+    user: ?slurm.CStr = null,
+    id: u32 = 0,
 };
 
 pub const QueueSummary = struct {
@@ -170,7 +170,7 @@ pub const JobIDPathParameter = IDPathParameter(u32);
 
 pub fn Number(comptime T: type) type {
     return struct {
-        value: ?T,
+        value: ?T = null,
         infinite: ?bool = null,
     };
 }
