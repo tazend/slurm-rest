@@ -14,7 +14,7 @@ const path_params = @import("../openapi/parameters/path.zig");
 pub const routes = &.{
     @"GET /partitions",
     @"GET /partitions/:name",
-    @"POST /partitions",
+    @"POST /partitions/:name",
 };
 
 pub const @"GET /partitions" = struct {
@@ -66,29 +66,30 @@ pub const @"GET /partitions/:name" = struct {
     }
 };
 
-pub const @"POST /partitions" = struct {
+pub const @"POST /partitions/:name" = struct {
     pub const Meta: RouteMeta = .{
         .tags = &.{
             "Partitions",
         },
-        .summary = "Update Partitions",
-        .description = "Updates Partitions",
-        .operationId = "updatePartitions",
+        .summary = "Update Partition",
+        .description = "Update a single Partition",
+        .operationId = "updatePartition",
         .response = .{
             .ref = openapi.BaseResponse,
             .description = "TODO",
         },
-        .requestBody = openapi.Partition,
+        .requestBody = openapi.part.Updatable,
+        .parameters = .{
+            .path = path_params.Partition,
+        },
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
-        std.debug.print("name: {?s}\n", .{ctx.body.name});
-//      std.debug.print("state: {d}\n", .{@as(u32, @bitCast(ctx.body.state))});
-//      std.debug.print("flags: {}\n", .{ctx.body.state.flags});
-//      std.debug.print("state all: {}\n", .{ctx.body.state});
-        const data = try dump(ctx.arena, ctx.body);
+        var part = ctx.body;
+        part.name = ctx.parameters.path.name;
+        const data = try dump(ctx.arena, part);
         std.debug.print("{s}\n", .{data});
-//        try slurm.node.update(ctx.body);
+        try slurm.partition.update(part);
         return .{};
     }
 };
