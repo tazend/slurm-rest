@@ -5,8 +5,9 @@ const ser = @import("new_dump_methods.zig");
 const openapi = @import("../openapi.zig");
 const Dumper = @import("Dumper.zig");
 
+pub const NewDumpFN = *const fn(dumper: *Dumper, value: anytype, ctx: Dumper.Context) anyerror!void;
 const SerdeContext = @This();
-const DumpFN = Dumper.NewDumpFN;
+const DumpFN = NewDumpFN;
 
 pub const JSONType = enum {
     object,
@@ -18,7 +19,6 @@ pub const JSONType = enum {
     null,
 };
 
-dump: DumpFN,
 json_type: JSONType,
 json_array_type: ?JSONType = null,
 json_object_types: ?[]const JSONType = null,
@@ -46,13 +46,6 @@ pub const Serde = union(enum) {
 
 pub fn object(comptime T: ObjectTypes) SerdeContext {
     return .{
-        .dump = switch (T) {
-            .container => ser.container,
-            .native => ser.native,
-            .node_state => ser.nodeState,
-            .number => ser.number,
-            .number_zero_is_noval => ser.numberNoValue,
-        },
         .json_type = .object,
         .sx = .{ .object = T },
     };
@@ -65,10 +58,6 @@ pub const DictionaryTypes = enum {
 
 pub fn dict(comptime T: DictionaryTypes, comptime json_types: []const JSONType) SerdeContext {
     return .{
-        .dump = switch (T) {
-            .gres_count => ser.gresDict,
-            .key_value => ser.dict,
-        },
         .json_type = .object,
         .json_object_types = json_types,
         .sx = .{ .dict = T },
@@ -90,23 +79,14 @@ pub const StringTypes = enum {
 
 pub fn string(comptime T: StringTypes) SerdeContext {
     return .{
-        .dump = switch (T) {
-            .native, .@"enum" => ser.native,
-            .print => ser.printString,
-            .job_stdout => ser.stdio("std_out"),
-            .job_stdin => ser.stdio("std_in"),
-            .job_stderr => ser.stdio("std_err"),
-            .user_name => ser.userName("user_id"),
-            .reason_user => ser.userName("reason_uid"),
-            .step_id => ser.stepIDString,
-            .sluid => ser.sluid,
-        },
         .json_type = .string,
         .sx = .{ .string = T },
     };
 }
 
 pub const IntegerTypes = enum {
+    method_number_flat,
+    method_number,
     std,
     native,
     native_zero_is_noval,
@@ -119,16 +99,6 @@ pub const IntegerTypes = enum {
 
 pub fn integer(comptime T: IntegerTypes) SerdeContext {
     return .{
-        .dump = switch (T) {
-            .std => ser.native,
-            .native => ser.numberFlat,
-            .native_zero_is_noval => ser.numberFlatNoValue,
-            .native_infinite_is_null => ser.numberFlatNoInfinite,
-            .node_idle_cpus => ser.nodeIdleCpus,
-            .timestamp => ser.timestampRaw,
-            .job_memory => ser.jobMemory,
-            .job_memory_total => ser.jobMemoryTotal,
-        },
         .json_type = .integer,
         .sx = .{ .integer = T },
     };
@@ -166,15 +136,6 @@ pub const ArrayTypes = enum {
 
 pub fn array(comptime T: ArrayTypes) SerdeContext {
     return .{
-        .dump = switch (T) {
-            .list => ser.list,
-            .load_response => ser.loadResponse,
-            .assocs_short => ser.assocsShort,
-            .integers => ser.arrayInt,
-            .csv => ser.array,
-            .native, .bitflag, .container => ser.native,
-            .nested_bitflag => ser.nestedBitflag,
-        },
         .json_type = .array,
         .json_array_type = switch (T) {
             .integers => .integer,
@@ -193,10 +154,6 @@ pub const BoolTypes = enum {
 
 pub fn boolean(comptime T: BoolTypes) SerdeContext {
     return .{
-        .dump = switch (T) {
-            .int => ser.bool,
-            .native => ser.native,
-        },
         .json_type = .boolean,
         .sx = .{ .boolean = T },
     };
@@ -204,7 +161,6 @@ pub fn boolean(comptime T: BoolTypes) SerdeContext {
 
 pub fn noop() SerdeContext {
     return .{
-        .dump = ser.noop,
         .json_type = .null,
         .sx = .{ .null = {} },
     };

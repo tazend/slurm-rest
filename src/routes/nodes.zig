@@ -35,7 +35,7 @@ pub const @"GET /nodes" = struct {
         const resp = try slurm.node.load();
         defer resp.deinit();
         return .{
-            .nodes = try dump(ctx.arena, resp),
+            .nodes = try ctx.dumpData(resp),
             .last_update = resp.last_update,
         };
     }
@@ -61,7 +61,7 @@ pub const @"GET /nodes/:name" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.NodeResponse {
         var node = try slurm.node.loadOne(ctx.parameters.path.name);
         defer node.deinit();
-        return .{ .data = try dump(ctx.arena, &node) };
+        return .{ .data = try ctx.dumpData(&node) };
     }
 };
 
@@ -84,7 +84,7 @@ pub const @"POST /nodes" = struct {
 //      std.debug.print("state: {d}\n", .{@as(u32, @bitCast(ctx.body.state))});
 //      std.debug.print("flags: {}\n", .{ctx.body.state.flags});
 //      std.debug.print("state all: {}\n", .{ctx.body.state});
-        const data = try dump(ctx.arena, ctx.body);
+        const data = try dump(ctx.arena, ctx.body, openapi.NodeUpdatable);
         std.debug.print("{s}\n", .{data});
         //try slurm.node.update(ctx.body);
         return .{};

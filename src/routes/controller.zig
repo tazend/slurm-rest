@@ -30,7 +30,7 @@ pub const @"GET /diag" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.ControllerStatisticsResponse {
         const stats = try slurm.slurmctld.loadStats();
         defer stats.deinit();
-        return .{ .statistics = try dump(ctx.arena, stats) };
+        return .{ .statistics = try dump(ctx.arena, stats, openapi.ControllerStatistics) };
     }
 };
 

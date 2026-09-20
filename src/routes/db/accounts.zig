@@ -41,7 +41,7 @@ pub const @"GET /db/accounts" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.AccountsResponse {
         const resp = try slurm.db.account.load(ctx.db_conn, ctx.parameters.query);
         defer resp.deinit();
-        return .{ .data = try dump(ctx.arena, resp)};
+        return .{ .data = try ctx.dumpData(resp)};
     }
 };
 
@@ -54,7 +54,7 @@ pub const @"GET /db/accounts/:name" = struct {
         .description = "Get one Account in the Database",
         .operationId = "getAccount",
         .response = .{
-            .ref = openapi.AccountsResponse,
+            .ref = openapi.AccountResponse,
             .description = "TODO",
         },
         .parameters = .{
@@ -65,7 +65,7 @@ pub const @"GET /db/accounts/:name" = struct {
         }
     };
 
-    pub fn handle(ctx: *const RouteData(@This())) !models.AccountsResponse {
+    pub fn handle(ctx: *const RouteData(@This())) !models.AccountSingleResponse {
         // TODO: Utilize existing query
         var list: *slurm.db.List(slurm.CStr) = .initNoDestroyItems();
         defer list.deinit();
@@ -80,7 +80,11 @@ pub const @"GET /db/accounts/:name" = struct {
 
         const resp = try slurm.db.account.load(ctx.db_conn, filter);
         defer resp.deinit();
-        return .{ .data = try dump(ctx.arena, resp)};
+        var iter = resp.iter();
+        defer iter.deinit();
+
+        const account = iter.next() orelse return error.UnknownAccount;
+        return .{ .data = try ctx.dumpData(account)};
     }
 };
 
@@ -103,8 +107,10 @@ pub const @"POST /db/accounts" = struct {
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
-        const data = try dump(ctx.arena, ctx.body);
-        std.debug.print("{s}\n", .{data});
+        _ = ctx;
         return .{};
+     // const data = try dump(ctx.arena, ctx.body, openapi.Account);
+     // std.debug.print("{s}\n", .{data});
+     // return .{};
     }
 };

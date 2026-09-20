@@ -20,6 +20,7 @@ pub const Array: SchemaComponent = .array(Partition, .load_response);
 pub const SingleResponse = openapi.GenericResponse("Partition", "Partition Information");
 
 pub const Response: SchemaComponent = .{
+    .child = Array,
     .api_type = models.PartitionsResponse,
     .properties = &.{
         .{

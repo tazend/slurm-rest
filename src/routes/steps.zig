@@ -32,7 +32,7 @@ pub const @"GET /steps" = struct {
         const resp = try slurm.step.load();
         defer resp.deinit();
         return .{
-            .steps = try dump(ctx.arena, resp),
+            .steps = try ctx.dumpData(resp),
             .last_update = resp.last_update,
         };
     }

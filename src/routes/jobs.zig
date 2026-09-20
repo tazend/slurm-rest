@@ -37,7 +37,7 @@ pub const @"GET /jobs" = struct {
         const resp = try slurm.job.load();
         defer resp.deinit();
         return .{
-            .jobs = try dump(ctx.arena, resp),
+            .jobs = try ctx.dumpData(resp),
             .last_backfill = resp.last_backfill,
             .last_update = resp.last_update,
         };
@@ -64,7 +64,7 @@ pub const @"GET /jobs/:id" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.JobResponse {
         var job = try slurm.job.loadOne(ctx.parameters.path.id);
         defer job.deinit();
-        return .{ .data = try dump(ctx.arena, &job) };
+        return .{ .data = try ctx.dumpData(&job) };
     }
 };
 
@@ -89,7 +89,7 @@ pub const @"GET /jobs/:id/steps" = struct {
         const resp = try slurm.step.loadForJob(ctx.parameters.path.id);
         defer resp.deinit();
         return .{
-            .steps = try dump(ctx.arena, resp),
+            .steps = try ctx.dumpData(resp),
             .last_update = resp.last_update,
         };
     }

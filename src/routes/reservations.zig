@@ -35,7 +35,7 @@ pub const @"GET /reservations" = struct {
         const resp = try slurm.reservation.load();
         defer resp.deinit();
         return .{
-            .reservations = try dump(ctx.arena, resp),
+            .reservations = try ctx.dumpData(resp),
             .last_update = resp.last_update,
         };
     }
@@ -62,7 +62,7 @@ pub const @"GET /reservations/:name" = struct {
         const resp = try slurm.reservation.load();
         defer resp.deinit();
         const resv = resp.find(ctx.parameters.path.name) orelse return slurm.Error.ReservationInvalid;
-        return .{ .data = try dump(ctx.arena, resv) };
+        return .{ .data = try ctx.dumpData(resv) };
     }
 };
 

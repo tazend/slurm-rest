@@ -38,6 +38,6 @@ pub const @"GET /db/users" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.UsersResponse {
         const resp = try slurm.db.user.load(ctx.db_conn, ctx.parameters.query);
         defer resp.deinit();
-        return .{ .data = try dump(ctx.arena, resp)};
+        return .{ .data = try dump(ctx.arena, resp, openapi.Users)};
     }
 };

@@ -31,9 +31,9 @@ pub const RequestContext = struct {
 
 pub const Action = *const fn (*Handler, *httpz.Request, *httpz.Response) anyerror!void;
 
-pub fn respond(value: anytype, res: *httpz.Response) !void {
+pub fn respond(value: anytype, res: *httpz.Response, comptime S: openapi.SchemaComponent) !void {
     var dumper: Dumper = .init(res.arena, &res.buffer.writer);
-    try Dumper.writeRequireSchema(&dumper, value);
+    try dumper.dumpSchema(value, S);
 }
 
 pub const SlurmRequirements = struct {
@@ -72,7 +72,7 @@ pub fn addRoutes2(router: anytype) void {
 
 pub fn RouteData(comptime R: type) type {
     return struct {
-        pub const Meta = R.Meta;
+        pub const Meta: RouteMeta = R.Meta;
 
         parameters: struct {
             path: if (Meta.parameters.path) |p| p.api_type else void,
@@ -120,9 +120,8 @@ pub fn RouteData(comptime R: type) type {
             if (Meta.requirements.db_conn) self.db_conn.close();
         }
 
-        pub fn write(self: *@This(), d: R.Response.api_type) !void {
-            _ = self;
-            _ = d;
+        pub fn dumpData(self: *const @This(), value: anytype) ![]const u8 {
+            return Dumper.dump(self.arena, value, Meta.response.ref.child.?);
         }
     };
 }
@@ -145,7 +144,7 @@ pub fn handlerRoute(comptime R: type) Action {
                         .detail = "TODO",
                     },
                 };
-                return try respond(r, res);
+                return try respond(r, res, R.Meta.response.ref);
             };
             defer data.deinit();
 
@@ -157,7 +156,7 @@ pub fn handlerRoute(comptime R: type) Action {
                     },
                 };
             };
-            return try respond(ret, res);
+            return try respond(ret, res, R.Meta.response.ref);
         }
     };
     return &H.handle;

@@ -50,3 +50,4 @@ pub const Account: SchemaComponent = .{
 
 pub const Accounts: SchemaComponent = .array(Account, .list);
 pub const Response = openapi.GenericResponse("Accounts", "List of Accounts");
+pub const SingleResponse = openapi.GenericResponse("Account", "Database Account Information");

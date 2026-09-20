@@ -39,7 +39,7 @@ pub const @"GET /db/qos" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.QoSResponse {
         const resp = try slurm.db.qos.load(ctx.db_conn, ctx.parameters.query);
         defer resp.deinit();
-        return .{ .data = try dump(ctx.arena, resp)};
+        return .{ .data = try dump(ctx.arena, resp, openapi.QoSArray)};
     }
 };
 

@@ -21,6 +21,7 @@ pub const ReservationResponse =       GenericResponse(openapi.Reservation);
 pub const DBJobResponse =             GenericResponse(openapi.DBJob);
 pub const QoSResponse =               GenericResponse(openapi.QoSArray);
 pub const QoSSingleResponse =         GenericResponse(openapi.QoS);
+pub const AccountSingleResponse =     GenericResponse(openapi.Account);
 
 pub const ControllerStatisticsResponse = struct {
     statistics: ?[]const u8 = "{}",
@@ -133,7 +134,6 @@ pub fn GenericResponse(comptime S: openapi.SchemaComponent) type {
             .array => "[]",
             .string => "",
             .object => "{}",
-            .null => null,
             else => @compileError("Unsupported response Type " ++ @tagName(S.serde.json_type)),
         };
 
@@ -150,6 +150,7 @@ pub fn GenericResponse(comptime S: openapi.SchemaComponent) type {
                 if (d.len == 0) DefaultValue else d
             else
                 null;
+            std.debug.print("ds\n", .{});
             try jw.print("{?s}", .{data});
             try jw.endObject();
         }

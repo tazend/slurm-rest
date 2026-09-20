@@ -26,12 +26,14 @@ pub const SchemaComponent = struct {
     serde: SerdeContext = .object(.container),
     properties: []const Property = &.{},
     ignored_fields: []const []const u8 = &.{},
+    child: ?SchemaComponent = null,
 
     pub fn array(comptime T: SchemaComponent, comptime A: SerdeContext.ArrayTypes) SchemaComponent {
         return .{
             .api_type = switch (A) {
                 .list => slurm.List(*T.api_type),
                 .load_response => T.api_type.LoadResponse,
+                .assocs_short => slurm.List(*slurm.db.Association),
                 else => T.api_type,
             },
             .serde = .array(A),
@@ -96,6 +98,7 @@ pub fn GenericResponse(comptime name: [:0]const u8, comptime what: []const u8) S
             },
         },
         .serde = .object(.container),
+        .child = T,
     };
 }
 
@@ -661,6 +664,7 @@ pub const DBStep: SchemaComponent = .{
             .name = "step_id",
             .description = "Step ID Infos",
             .serde = .object(.container),
+            .ref = StepID,
         },
         .{
             .api_name = "stepname",
@@ -799,16 +803,16 @@ pub const Reservation: SchemaComponent = .{
             .description = "Time when the Reservation starts",
             .serde = .integer(.timestamp),
         },
-        .{
-            .api_name = "core_spec",
-            .name = "specialized_cores",
-            .description = "Cores Reserved for the System",
-            .serde = .{
-                .dump = ser.resCoreSpec,
-                .json_type = .object,
-                .sx = .{ .object = .native },
-            },
-        },
+//      .{
+//          .api_name = "core_spec",
+//          .name = "specialized_cores",
+//          .description = "Cores Reserved for the System",
+//          .serde = .{
+//              .dump = ser.resCoreSpec,
+//              .json_type = .object,
+//              .sx = .{ .object = .reservation_core_spec },
+//          },
+//      },
         .{
             .api_name = "tres_str",
             .name = "tres",
@@ -1197,7 +1201,6 @@ pub const Job: SchemaComponent = .{
             .serde = .string(.native),
         },
         .{
-            .api_name = "pn_min_memory",
             .name = "memory",
             .description = "Memory per Node or CPU",
             .serde = .integer(.job_memory),
@@ -1318,6 +1321,7 @@ pub const Job: SchemaComponent = .{
             .serde = .string(.job_stdin),
         },
         .{
+            .api_name = "user_id",
             .name = "user_name",
             .description = "Name of the User who submitted this Job",
             .serde = .string(.user_name),
@@ -1471,6 +1475,7 @@ pub const Step: SchemaComponent = .{
             .name = "step_id",
             .description = "Step ID",
             .serde = .object(.container),
+            .ref = StepID,
         },
         .{
             .name = "std_err",
@@ -1545,6 +1550,7 @@ pub const Step: SchemaComponent = .{
         },
         .{
             // TODO: Just specify the name of the field for api_name thatr contains the uid
+            .api_name = "user_id",
             .name = "user_name",
             .description = "User Name for the Step",
             .serde = .string(.user_name),
@@ -2244,33 +2250,24 @@ pub const ControllerStatistics: SchemaComponent = .{
             .serde = .integer(.native),
         },
         .{
+            .api_name = "meanCycle",
             .name = "schedule_cycle_mean",
             .description = "Mean time for all scheduling cycles, in microseconds",
-            .serde = .{
-                .dump = ser.method("meanCycle"),
-                .json_type = .integer,
-                .sx = .{ .integer = .native },
-            },
+            .serde = .integer(.method_number_flat),
             .extra = true,
         },
         .{
+            .api_name = "meanDepthCycle",
             .name = "schedule_cycle_mean_depth",
             .description = "Mean of number of jobs processed during scheduling",
-            .serde = .{
-                .dump = ser.method("meanDepthCycle"),
-                .json_type = .integer,
-                .sx = .{ .integer = .native },
-            },
+            .serde = .integer(.method_number_flat),
             .extra = true,
         },
         .{
+            .api_name = "cyclesPerMinute",
             .name = "schedule_cycleis_per_minute",
             .description = "Number of scheduling cycles performed per minute",
-            .serde = .{
-                .dump = ser.method("cyclesPerMinute"),
-                .json_type = .integer,
-                .sx = .{ .integer = .native },
-            },
+            .serde = .integer(.method_number_flat),
             .extra = true,
         },
         .{
@@ -2401,6 +2398,7 @@ pub const JobScriptResponse: SchemaComponent = .{
 };
 
 pub const NodesResponse: SchemaComponent = .{
+    .child = Nodes,
     .api_type = models.NodesResponse,
     .properties = &.{
         .{
@@ -2448,6 +2446,7 @@ pub const BaseResponse: SchemaComponent = .{
 };
 
 pub const StepsResponse: SchemaComponent = .{
+    .child = Steps,
     .api_type = models.StepsResponse,
     .properties = &.{
         .{
@@ -2477,6 +2476,7 @@ pub const StepsResponse: SchemaComponent = .{
 };
 
 pub const ReservationsResponse: SchemaComponent = .{
+    .child = Reservations,
     .api_type = models.ReservationsResponse,
     .properties = &.{
         .{
@@ -2506,6 +2506,7 @@ pub const ReservationsResponse: SchemaComponent = .{
 };
 
 pub const JobsResponse: SchemaComponent = .{
+    .child = Jobs,
     .api_type = models.JobsResponse,
     .properties = &.{
         .{
@@ -2555,6 +2556,7 @@ const account = @import("openapi/schemas/account.zig");
 pub const Account = account.Account;
 pub const Accounts = account.Accounts;
 pub const AccountsResponse = account.Response;
+pub const AccountResponse = account.SingleResponse;
 
 const assoc = @import("openapi/schemas/association.zig");
 pub const Association = assoc.Association;

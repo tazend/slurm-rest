@@ -38,6 +38,6 @@ pub const @"GET /db/associations" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.AssociationsResponse {
         const resp = try slurm.db.association.load(ctx.db_conn, ctx.parameters.query);
         defer resp.deinit();
-        return .{ .data = try dump(ctx.arena, resp)};
+        return .{ .data = try ctx.dumpData(resp)};
     }
 };

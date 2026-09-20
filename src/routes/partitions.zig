@@ -35,7 +35,7 @@ pub const @"GET /partitions" = struct {
         const resp = try slurm.partition.load();
         defer resp.deinit();
         return .{
-            .partitions = try dump(ctx.arena, resp),
+            .partitions = try ctx.dumpData(resp),
             .last_update = resp.last_update,
         };
     }
@@ -62,7 +62,7 @@ pub const @"GET /partitions/:name" = struct {
         const resp = try slurm.partition.load();
         defer resp.deinit();
         const part = resp.find(ctx.parameters.path.name) orelse return slurm.Error.InvalidPartitionName;
-        return .{ .data = try dump(ctx.arena, part) };
+        return .{ .data = try ctx.dumpData(part) };
     }
 };
 
@@ -87,7 +87,7 @@ pub const @"POST /partitions/:name" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
         var part = ctx.body;
         part.name = ctx.parameters.path.name;
-        const data = try dump(ctx.arena, part);
+        const data = try dump(ctx.arena, part, openapi.Partition);
         std.debug.print("{s}\n", .{data});
         try slurm.partition.update(part);
         return .{};
