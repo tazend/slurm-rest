@@ -132,6 +132,7 @@ pub const ArrayTypes = enum {
     container,
     bitflag,
     nested_bitflag,
+    reservation_core_specs,
 };
 
 pub fn array(comptime T: ArrayTypes) SerdeContext {

@@ -90,6 +90,7 @@ pub fn dumpProperty(self: *Dumper, instance: anytype, comptime P: openapi.Proper
             .native, .bitflag, .container => try self.json.write(value),
             .integers => try self.array(value, .{ .numbers = true }),
             .assocs_short => return self.assocsShort(value),
+            .reservation_core_specs => try self.arrayWithExternalSize(value, instance.core_spec_cnt, P.getRefChild()),
         },
         .boolean => |b| switch (b) {
             .int => if (value == 0) try self.json.write(false) else try self.json.write(true),
@@ -215,6 +216,18 @@ const ArrayOptions = struct {
     sep: u8 = ',',
     numbers: bool = false,
 };
+
+pub fn arrayWithExternalSize(self: *Dumper, value: anytype, size: u64, comptime Child: SchemaComponent) !void {
+    try self.json.beginArray();
+    const v = switch (@typeInfo(@TypeOf(value))) {
+        .optional => if (value) |i| i else return try self.json.endArray(),
+        else => value,
+    };
+    for (0..size) |i| {
+        try self.dumpSchema(v[i], Child);
+    }
+    try self.json.endArray();
+}
 
 pub fn array(self: *Dumper, value: anytype, comptime options: ArrayOptions) !void {
     const buf = slurm.parseCStrZ(value) orelse {

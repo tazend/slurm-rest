@@ -746,6 +746,24 @@ pub const DBStep: SchemaComponent = .{
     },
 };
 
+pub const ReservationCoreSpec: SchemaComponent = .{
+    .api_type = slurm.Reservation.CoreSpec,
+    .properties = &.{
+        .{
+            .name = "node_name",
+            .description = "Name of the Node",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "core_id",
+            .description = "Core ID",
+            .serde = .string(.native),
+        },
+    },
+};
+
+pub const ReservationCoreSpecArray: SchemaComponent = .array(ReservationCoreSpec, .reservation_core_specs);
+
 pub const Reservation: SchemaComponent = .{
     .api_type = slurm.Reservation,
     .ignored_fields = &.{
@@ -803,16 +821,13 @@ pub const Reservation: SchemaComponent = .{
             .description = "Time when the Reservation starts",
             .serde = .integer(.timestamp),
         },
-//      .{
-//          .api_name = "core_spec",
-//          .name = "specialized_cores",
-//          .description = "Cores Reserved for the System",
-//          .serde = .{
-//              .dump = ser.resCoreSpec,
-//              .json_type = .object,
-//              .sx = .{ .object = .reservation_core_spec },
-//          },
-//      },
+        .{
+            .api_name = "core_spec",
+            .name = "specialized_cores",
+            .description = "Cores Reserved for the System",
+            .serde = .array(.reservation_core_specs),
+            .ref = ReservationCoreSpecArray,
+        },
         .{
             .api_name = "tres_str",
             .name = "tres",
