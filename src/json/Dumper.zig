@@ -9,6 +9,8 @@ const SerdeContext = @import("SerdeContext.zig");
 const j = @import("../json.zig");
 const types = j.types;
 const uidToNameBuf = @import("../util.zig").uidToNameBuf;
+const SchemaComponent = openapi.SchemaComponent;
+const Property = openapi.Property;
 
 json: Stringify,
 allocator: Allocator,
@@ -23,37 +25,38 @@ pub fn init(allocator: Allocator, writer: *std.Io.Writer) Dumper {
     };
 }
 
-pub fn dump(allocator: Allocator, value: anytype, comptime S: openapi.SchemaComponent) ![]const u8 {
+pub fn dump(allocator: Allocator, value: anytype, comptime S: SchemaComponent) ![]const u8 {
     var aw: std.Io.Writer.Allocating = .init(allocator);
     var dumper: Dumper = .init(allocator, &aw.writer);
     try dumper.dumpSchema(value, S);
     return aw.toOwnedSlice();
 }
 
-pub fn dumpSchema(self: *Dumper, value: anytype, comptime S: openapi.SchemaComponent) !void {
-    std.debug.print("here for {s}\n", .{@typeName(S.api_type)});
+pub fn dumpSchema(self: *Dumper, value: anytype, comptime S: SchemaComponent) !void {
     switch (S.serde.sx) {
         .object => |o| switch (o) {
             .container => try self.container(value, S),
             else => @compileError("Unsuppored object schema dumper"),
         },
         .array => |a| switch (a) {
-            .list => try self.list(value),
+            .list => try self.list(value, S),
             .assocs_short => try self.assocsShort(value),
-            .load_response => try self.loadResponse(value),
+            .load_response => try self.loadResponse(value, S.getChild()),
             else => {},
         },
         else => {},
     }
 }
 
-pub fn dumpProperty(self: *Dumper, instance: anytype, comptime P: openapi.Property) !void {
-    const base = comptime baseType(@TypeOf(instance));
+pub fn dumpProperty(self: *Dumper, comptime S: SchemaComponent, instance: anytype, comptime P: Property) !void {
+    // Just skip immediately, since this is explicitly marked as a no-op.
+    if (P.serde.sx == .@"null") return;
+
     const fname = P.api_name orelse P.name;
     try self.json.objectField(P.name);
 
-    const value = if (@hasDecl(base, fname))
-        @field(base, fname)
+    const value = if (@hasDecl(S.api_type, fname))
+        @field(S.api_type, fname)
     else
         @field(instance, fname);
 
@@ -62,7 +65,7 @@ pub fn dumpProperty(self: *Dumper, instance: anytype, comptime P: openapi.Proper
             .number => try self.numberRaw(value, .{}),
             .number_zero_is_noval => try self.numberRaw(value, .{ .zero_is_noval = true }),
             .container => {
-                return self.container(value, P.ref.?);
+                return self.container(value, P.getRef());
             },
             .native => try self.json.write(value),
             .node_state => {
@@ -85,7 +88,7 @@ pub fn dumpProperty(self: *Dumper, instance: anytype, comptime P: openapi.Proper
                     try self.json.print("[]", .{});
                 }
             },
-            .list => return self.list(value),
+            .list => return self.list(value, P.getRef()),
             .load_response => @compileError("Found load_response dumper on a property."),
             .native, .bitflag, .container => try self.json.write(value),
             .integers => try self.array(value, .{ .numbers = true }),
@@ -172,42 +175,38 @@ pub fn assocsShort(self: *Dumper, value: anytype) !void {
     try self.json.endArray();
 }
 
-pub fn container(self: *Dumper, instance: anytype, comptime S: openapi.SchemaComponent) !void {
+pub fn container(self: *Dumper, instance: anytype, comptime S: SchemaComponent) !void {
     try self.json.beginObject();
     const v = switch (@typeInfo(@TypeOf(instance))) {
         .optional => if (instance) |i| i else return try self.json.endObject(),
         else => instance,
     };
     inline for (S.properties) |prop| {
-        try self.dumpProperty(v, prop);
+        try self.dumpProperty(S, v, prop);
     }
     try self.json.endObject();
 }
 
-pub fn list(self: *Dumper, instance: anytype) !void {
-    const T = @TypeOf(instance);
-    const List = comptime types.baseType(T);
-    const it: ?*List.Iterator = switch (@typeInfo(T)) {
+pub fn list(self: *Dumper, instance: anytype, comptime S: SchemaComponent) !void {
+    const List = S.api_type;
+    const it: ?*List.Iterator = switch (@typeInfo(@TypeOf(instance))) {
         .optional => if (instance) |i| i.iter() else null,
         else => instance.iter(),
     };
-
     try self.json.beginArray();
     if (it) |i| {
         while (i.next()) |item| {
-            const schema = getSchema(@TypeOf(item));
-            try self.dumpSchema(item, schema);
+            try self.dumpSchema(item, S.getChild());
         }
     }
     try self.json.endArray();
 }
 
-pub fn loadResponse(self: *Dumper, instance: anytype) !void {
+pub fn loadResponse(self: *Dumper, instance: anytype, comptime Child: SchemaComponent) !void {
     try self.json.beginArray();
     var iter = instance.iter();
     while (iter.next()) |item| {
-        const schema = getSchema(@TypeOf(item));
-        try self.dumpSchema(item, schema);
+        try self.dumpSchema(item, Child);
     }
     try self.json.endArray();
 }
@@ -366,13 +365,13 @@ pub fn numberRaw(self: *Dumper, data: anytype, opts: NumberOptions) !void {
     }
 }
 
-pub fn getSchema(comptime T: type) openapi.SchemaComponent {
+pub fn getSchema(comptime T: type) SchemaComponent {
     const decls = @typeInfo(openapi).@"struct".decls;
     const Child = comptime baseType(T);
 
     for (decls) |decl| {
         const field = @field(openapi, decl.name);
-        if (@TypeOf(field) == openapi.SchemaComponent) {
+        if (@TypeOf(field) == SchemaComponent) {
             if (field.api_type == Child) {
                 return field;
             }

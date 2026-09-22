@@ -16,6 +16,15 @@ pub const Property = struct {
     // Whether this component is being considered for dumping/parsing without
     // existing on the API Type itself.
     extra: bool = false,
+
+    pub fn getRef(self: Property) SchemaComponent {
+        return self.ref orelse @compileError("Missing Ref on Property " ++ self.name);
+    }
+
+    pub fn getRefChild(self: Property) SchemaComponent {
+        const r = self.getRef();
+        return r.getChild();
+    }
 };
 
 /// A Top-Level Schema Component
@@ -28,6 +37,10 @@ pub const SchemaComponent = struct {
     ignored_fields: []const []const u8 = &.{},
     child: ?SchemaComponent = null,
 
+    pub fn getChild(self: SchemaComponent) SchemaComponent {
+        return self.child orelse @compileError("Missing 'child' on " ++ @typeName(@TypeOf(self.api_type)));
+    }
+
     pub fn array(comptime T: SchemaComponent, comptime A: SerdeContext.ArrayTypes) SchemaComponent {
         return .{
             .api_type = switch (A) {
@@ -37,6 +50,7 @@ pub const SchemaComponent = struct {
                 else => T.api_type,
             },
             .serde = .array(A),
+            .child = T,
         };
     }
 };
@@ -2189,6 +2203,7 @@ pub const User: SchemaComponent = .{
             .name = "wckeys",
             .description = "List of WCKeys",
             .serde = .array(.list),
+            .ref = WCKeys,
         },
     },
 };
