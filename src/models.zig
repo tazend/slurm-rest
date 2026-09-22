@@ -2,7 +2,6 @@ const std = @import("std");
 const mem = std.mem;
 const Stringify = std.json.Stringify;
 const slurm = @import("slurm");
-const json = @import("json.zig");
 const openapi = @import("openapi.zig");
 const SerdeContext = @import("json/SerdeContext.zig");
 

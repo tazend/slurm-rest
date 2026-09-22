@@ -1,7 +1,6 @@
 const std = @import("std");
 const slurm = @import("slurm");
 const Stringify = std.json.Stringify;
-const ser = @import("new_dump_methods.zig");
 const openapi = @import("../openapi.zig");
 const Dumper = @import("Dumper.zig");
 
@@ -112,13 +111,6 @@ pub fn native(comptime T: JSONType) SerdeContext {
         else => @compileLog("Unsupported native JSONType " ++ @typeName(T)),
     };
     return dump;
-}
-
-pub fn unsupported() SerdeContext {
-    return .{
-        .dump = ser.unsupported,
-        .json_type = .object,
-    };
 }
 
 // Serializer that should be invoked

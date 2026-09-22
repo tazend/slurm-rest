@@ -6,8 +6,6 @@ const Dumper = @This();
 const openapi = @import("../openapi.zig");
 const models = @import("../models.zig");
 const SerdeContext = @import("SerdeContext.zig");
-const j = @import("../json.zig");
-const types = j.types;
 const uidToNameBuf = @import("../util.zig").uidToNameBuf;
 const SchemaComponent = openapi.SchemaComponent;
 const Property = openapi.Property;
@@ -162,7 +160,7 @@ pub fn assocsShort(self: *Dumper, value: anytype) !void {
     if (value) |assocs| {
         var it = assocs.iter();
         while (it.next()) |assoc| {
-            const assoc_short: types.AssociationShort = .{
+            const assoc_short: models.AssociationShort = .{
                 .account = assoc.acct,
                 .cluster = assoc.cluster,
                 .user = assoc.user,
