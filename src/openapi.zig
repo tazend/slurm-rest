@@ -760,139 +760,6 @@ pub const DBStep: SchemaComponent = .{
     },
 };
 
-pub const ReservationCoreSpec: SchemaComponent = .{
-    .api_type = slurm.Reservation.CoreSpec,
-    .properties = &.{
-        .{
-            .name = "node_name",
-            .description = "Name of the Node",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "core_id",
-            .description = "Core ID",
-            .serde = .string(.native),
-        },
-    },
-};
-
-pub const ReservationCoreSpecArray: SchemaComponent = .array(ReservationCoreSpec, .reservation_core_specs);
-
-pub const Reservation: SchemaComponent = .{
-    .api_type = slurm.Reservation,
-    .ignored_fields = &.{
-        "node_inx", "core_spec_cnt",
-    },
-    .properties = &.{
-        .{
-            .name = "burst_buffer",
-            .description = "Burst Buffer Information",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "comment",
-            .description = "Arbitrary comment",
-            .serde = .string(.native),
-        },
-        .{
-            .api_name = "core_cnt",
-            .name = "cores",
-            .description = "Number of Cores reserved",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "end_time",
-            .description = "Time when the Reservation ends",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .name = "flags",
-            .description = "List of Flags",
-            .serde = .array(.bitflag),
-        },
-        .{
-            .name = "max_start_delay",
-            .description = "Maximum start delay",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "name",
-            .description = "Name of the Reservation",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "purge_comp_time",
-            .description = "Purge Completion Time",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "qos",
-            .description = "Quality of Service assigned",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "start_time",
-            .description = "Time when the Reservation starts",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .api_name = "core_spec",
-            .name = "specialized_cores",
-            .description = "Cores Reserved for the System",
-            .serde = .array(.reservation_core_specs),
-            .ref = ReservationCoreSpecArray,
-        },
-        .{
-            .api_name = "tres_str",
-            .name = "tres",
-            .description = "TRES reserved",
-            .serde = .dict(.key_value, &.{ .string, .integer }),
-        },
-        .{
-            .api_name = "node_cnt",
-            .name = "node_count",
-            .description = "Total number of nodes reserved",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "node_list",
-            .name = "nodes",
-            .description = "Nodes reserved",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "licenses",
-            .description = "Names of Licenses in this Reservation",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "groups",
-            .description = "Names of Groups allowed",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "features",
-            .description = "Names of Features",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "allowed_parts",
-            .description = "List of allowed Partitions",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "accounts",
-            .description = "List of allowed Accounts",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "users",
-            .description = "List of allowed Users",
-            .serde = .array(.csv),
-        },
-    },
-};
-
 pub const Job: SchemaComponent = .{
     .api_type = slurm.Job,
     .ignored_fields = &.{
@@ -2367,7 +2234,6 @@ pub const Coordinators:      SchemaComponent = .array(Coordinator, .list);
 pub const Users:             SchemaComponent = .array(User, .list);
 pub const WCKeys:            SchemaComponent = .array(WCKey, .list);
 pub const Jobs:              SchemaComponent = .array(Job, .load_response);
-pub const Reservations:      SchemaComponent = .array(Reservation, .load_response);
 pub const Nodes:             SchemaComponent = .array(Node, .load_response);
 pub const Steps:             SchemaComponent = .array(Step, .load_response);
 
@@ -2378,7 +2244,6 @@ pub const UsersResponse =        GenericResponse("Users", "List of Database User
 pub const WCKeysResponse =       GenericResponse("WCKeys", "List of Database WCKeys");
 pub const JobResponse =          GenericResponse("Job", "Job information");
 pub const NodeResponse =         GenericResponse("Node", "Node information");
-pub const ReservationResponse =  GenericResponse("Reservation", "Reservation information");
 pub const DBJobResponse =        GenericResponse("DBJob", "Database Job Information");
 
 pub const ControllerStatisticsResponse: SchemaComponent = .{
@@ -2457,22 +2322,24 @@ pub const NodesResponse: SchemaComponent = .{
     },
 };
 
+pub const BaseResponseProperties: []const Property = &.{
+    .{
+        .name = "meta",
+        .description = "Metadata",
+        .ref = Meta,
+        .serde = .object(.native),
+    },
+    .{
+        .name = "error",
+        .description = "Errors",
+        .ref = Error,
+        .serde = .object(.native),
+    },
+};
+
 pub const BaseResponse: SchemaComponent = .{
     .api_type = models.BaseResponse,
-    .properties = &.{
-        .{
-            .name = "meta",
-            .description = "Metadata",
-            .ref = Meta,
-            .serde = .object(.native),
-        },
-        .{
-            .name = "error",
-            .description = "Errors",
-            .ref = Error,
-            .serde = .object(.native),
-        },
-    },
+    .properties = BaseResponseProperties,
 };
 
 pub const StepsResponse: SchemaComponent = .{
@@ -2488,36 +2355,6 @@ pub const StepsResponse: SchemaComponent = .{
             .name = "steps",
             .description = "List of Steps",
             .ref = Steps,
-            .serde = .string(.print),
-        },
-        .{
-            .name = "meta",
-            .description = "Metadata",
-            .ref = Meta,
-            .serde = .object(.native),
-        },
-        .{
-            .name = "error",
-            .description = "Errors",
-            .ref = Error,
-            .serde = .object(.native),
-        },
-    },
-};
-
-pub const ReservationsResponse: SchemaComponent = .{
-    .child = Reservations,
-    .api_type = models.ReservationsResponse,
-    .properties = &.{
-        .{
-            .name = "last_update",
-            .description = "Time of last update of this data",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .name = "reservations",
-            .description = "List of Reservations",
-            .ref = Reservations,
             .serde = .string(.print),
         },
         .{
@@ -2569,6 +2406,14 @@ pub const JobsResponse: SchemaComponent = .{
         },
     },
 };
+
+pub const reservation = @import("openapi/schemas/reservation.zig");
+pub const ReservationCoreSpec = reservation.ReservationCoreSpec;
+pub const ReservationCoreSpecArray = reservation.ReservationCoreSpecArray;
+pub const Reservations = reservation.Reservations;
+pub const ReservationResponse = reservation.ReservationResponse;
+pub const ReservationsResponse = reservation.ReservationsResponse;
+pub const Reservation = reservation.Reservation;
 
 const qos = @import("openapi/schemas/qos.zig");
 pub const QoS = qos.QoS;
