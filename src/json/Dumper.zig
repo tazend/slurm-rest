@@ -81,7 +81,7 @@ pub fn dumpProperty(self: *Dumper, comptime S: SchemaComponent, instance: anytyp
             .nested_bitflag => {
                 const T = @typeInfo(@TypeOf(instance)).@"struct".backing_integer.?;
                 if (slurm.common.numberHasValue(@as(T, @bitCast(instance)))) {
-                    try self.json.write(instance);
+                    try self.json.write(value);
                 } else {
                     try self.json.print("[]", .{});
                 }
