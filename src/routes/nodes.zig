@@ -15,6 +15,7 @@ pub const routes = &.{
     @"GET /nodes",
     @"GET /nodes/:name",
     @"POST /nodes",
+    @"DELETE /nodes/:name",
 };
 
 pub const @"GET /nodes" = struct {
@@ -81,12 +82,37 @@ pub const @"POST /nodes" = struct {
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
-//      std.debug.print("state: {d}\n", .{@as(u32, @bitCast(ctx.body.state))});
-//      std.debug.print("flags: {}\n", .{ctx.body.state.flags});
-//      std.debug.print("state all: {}\n", .{ctx.body.state});
         const data = try dump(ctx.arena, ctx.body, openapi.NodeUpdatable);
         std.debug.print("{s}\n", .{data});
         //try slurm.node.update(ctx.body);
+        return .{};
+    }
+};
+
+pub const @"DELETE /nodes/:name" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "Nodes",
+        },
+        .summary = "Delete Node",
+        .description = "Delete one specific Node",
+        .operationId = "deleteNode",
+        .response = .{
+            .ref = openapi.BaseResponse,
+            .description = "TODO",
+        },
+        .parameters = .{
+            .path = path_params.Node,
+        },
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
+        const msg: slurm.Node.Updatable = .{
+            .names = ctx.parameters.path.name,
+        };
+        // TODO: This returns InvalidNodeState if the node cannot be deleted.
+        // Catch that and return a better error.
+        try slurm.node.delete(msg);
         return .{};
     }
 };
