@@ -27,7 +27,6 @@ sx: Serde,
 pub const ObjectTypes = enum {
     container,
     native,
-    node_state,
     number,
     number_zero_is_noval,
 };

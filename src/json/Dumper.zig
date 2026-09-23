@@ -66,13 +66,6 @@ pub fn dumpProperty(self: *Dumper, comptime S: SchemaComponent, instance: anytyp
                 return self.container(value, P.getRef());
             },
             .native => try self.json.write(value),
-            .node_state => {
-                const state = if (@as(u32, @bitCast(value)) != slurm.common.NoValue.u32)
-                    @tagName(value.base)
-                else
-                    null;
-                try self.json.write(state);
-            },
         },
         // This is explicitly marked as a no-op
         .@"null" => {},
