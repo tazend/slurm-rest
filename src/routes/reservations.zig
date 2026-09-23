@@ -16,6 +16,7 @@ pub const routes = &.{
     @"GET /reservations/:name",
     @"DELETE /reservations/:name",
     @"POST /reservations/:name",
+    @"PUT /reservations/:name",
 };
 
 pub const @"GET /reservations" = struct {
@@ -114,6 +115,34 @@ pub const @"POST /reservations/:name" = struct {
         const data = try dump(ctx.arena, ctx.body, openapi.reservation.ReservationUpdatable);
         std.debug.print("{s}\n", .{data});
         try slurm.reservation.update(resv);
+        return .{};
+    }
+};
+
+pub const @"PUT /reservations/:name" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "Reservations",
+        },
+        .summary = "Create Reservation",
+        .description = "Create a single Reservation",
+        .operationId = "createReservation",
+        .response = .{
+            .ref = openapi.BaseResponse,
+            .description = "TODO",
+        },
+        .requestBody = openapi.reservation.ReservationUpdatable,
+        .parameters = .{
+            .path = path_params.Reservation,
+        },
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
+        var resv = ctx.body;
+        resv.name = ctx.parameters.path.name;
+        const data = try dump(ctx.arena, ctx.body, openapi.reservation.ReservationUpdatable);
+        std.debug.print("{s}\n", .{data});
+        try slurm.reservation.create(resv);
         return .{};
     }
 };
