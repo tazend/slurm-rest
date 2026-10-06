@@ -93,6 +93,7 @@ pub const IntegerTypes = enum {
     timestamp,
     job_memory,
     job_memory_total,
+    signal,
 };
 
 pub fn integer(comptime T: IntegerTypes) SerdeContext {

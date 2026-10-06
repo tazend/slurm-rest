@@ -56,7 +56,7 @@ pub fn parseProperty(self: *Parser, r: anytype, comptime P: openapi.Property) an
 
     switch (P.serde.sx) {
         .object => |o| switch (o) {
-            .number => {
+            .number, .number_zero_is_noval => {
                 const num = try self.parseWithSchema(openapi.Number(T));
                 field.* = if (num.infinite) |_|
                     @field(slurm.common.Infinite, @typeName(T))
@@ -88,10 +88,12 @@ pub fn parseProperty(self: *Parser, r: anytype, comptime P: openapi.Property) an
             else => @compileError("dict not yet supported"),
         },
         .integer => |i| switch (i) {
+            .signal => @compileError("TODO"),
             inline else => field.* = try self.innerParse(T),
         },
         .number => |_| @compileError("number is not supported"),
         .string => |s| switch (s) {
+            .user_name => @compileError("TODO"),
             .@"enum" => field.* = try self.innerParse(T),
             inline else => field.* = try self.innerParse([:0]const u8),
         },

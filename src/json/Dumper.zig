@@ -103,7 +103,7 @@ pub fn dumpProperty(self: *Dumper, comptime S: SchemaComponent, instance: anytyp
                 const v = value(instance);
                 try self.numberRaw(v, .{});
             },
-            .std => try self.json.write(value),
+            .std, .signal => try self.json.write(value),
             .node_idle_cpus => {
                 const util = value(instance);
                 try self.json.write(util.idle_cpus);
