@@ -458,56 +458,7 @@ pub const StepID: SchemaComponent = .{
     },
 };
 
-pub const WCKey: SchemaComponent = .{
-    .api_type = slurm.db.WCKey,
-    .properties = &.{
-        .{
-            .name = "accounting_list",
-            .description = "Accounting Informations",
-            .serde = .noop(),
-        },
-        .{
-            .name = "cluster",
-            .description = "Name of the Cluster",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "flags",
-            .description = "WCKey Flags",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "id",
-            .description = "ID",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "is_def",
-            .description = "Whether the WCKey is default",
-            .serde = .boolean(.int),
-        },
-        .{
-            .name = "name",
-            .description = "Name of the WCKey",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "uid",
-            .description = "UID of the User this WCKey is assigned to",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "user",
-            .description = "Name of the User this WCKey is assigned to",
-            .serde = .string(.native),
-        },
-    },
-};
-
-pub const WCKeys:            SchemaComponent = .array(WCKey, .list);
 pub const Steps:             SchemaComponent = .array(Step, .load_response);
-
-pub const WCKeysResponse =       GenericResponse("WCKeys", "List of Database WCKeys");
 
 pub const BaseResponseProperties: []const Property = &.{
     .{
@@ -623,6 +574,11 @@ const coordinator = @import("openapi/schemas/db/coordinator.zig");
 pub const Coordinator = coordinator.Coordinator;
 pub const Coordinators = coordinator.Coordinators;
 pub const CoordinatorsResponse = coordinator.CoordinatorsResponse;
+
+const wckey = @import("openapi/schemas/db/wckey.zig");
+pub const WCKey = wckey.WCKey;
+pub const WCKeys = wckey.WCKeys;
+pub const WCKeysResponse = wckey.WCKeysResponse;
 
 const assoc = @import("openapi/schemas/association.zig");
 pub const Association = assoc.Association;
