@@ -207,22 +207,6 @@ pub const Meta: SchemaComponent = .{
     },
 };
 
-pub const Coordinator: SchemaComponent = .{
-    .api_type = slurm.db.Coordinator,
-    .properties = &.{
-        .{
-            .name = "name",
-            .description = "Name of the Coordinator",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "direct",
-            .description = "Whether the Coordinator is direct",
-            .serde = .boolean(.int),
-        },
-    },
-};
-
 pub const Step: SchemaComponent = .{
     .api_type = slurm.Step,
     .ignored_fields = &.{
@@ -520,11 +504,9 @@ pub const WCKey: SchemaComponent = .{
     },
 };
 
-pub const Coordinators:      SchemaComponent = .array(Coordinator, .list);
 pub const WCKeys:            SchemaComponent = .array(WCKey, .list);
 pub const Steps:             SchemaComponent = .array(Step, .load_response);
 
-pub const CoordinatorsResponse = GenericResponse("Coordinators", "List of Database Coordinators");
 pub const WCKeysResponse =       GenericResponse("WCKeys", "List of Database WCKeys");
 
 pub const BaseResponseProperties: []const Property = &.{
@@ -636,6 +618,11 @@ pub const User = user.User;
 pub const Users = user.Users;
 pub const UsersResponse = user.UsersResponse;
 pub const UserResponse = user.UserResponse;
+
+const coordinator = @import("openapi/schemas/db/coordinator.zig");
+pub const Coordinator = coordinator.Coordinator;
+pub const Coordinators = coordinator.Coordinators;
+pub const CoordinatorsResponse = coordinator.CoordinatorsResponse;
 
 const assoc = @import("openapi/schemas/association.zig");
 pub const Association = assoc.Association;
