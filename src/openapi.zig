@@ -1369,9 +1369,15 @@ pub const StepsResponse: SchemaComponent = .{
     },
 };
 
+pub const SpecificationResponse: SchemaComponent = .{
+    .api_type = models.OpenAPISpecificationResponse,
+    .properties = [_]Property{
         .{
+            .name = "spec",
+            .description = "OpenAPI Specification",
             .serde = .string(.print),
         },
+    } ++ BaseResponseProperties,
 };
 
 pub const reservation = @import("openapi/schemas/reservation.zig");

@@ -46,6 +46,12 @@ pub const JobScriptResponse = struct {
     meta: ?Meta = null,
 };
 
+pub const OpenAPISpecificationResponse = struct {
+    spec: ?[]const u8 = "",
+    @"error": ?Error = null,
+    meta: ?Meta = null,
+};
+
 pub const NodesResponse = struct {
     last_update: std.c.time_t = 0,
     nodes: ?[]const u8 = "[]",

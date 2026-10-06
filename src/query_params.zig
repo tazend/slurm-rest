@@ -28,6 +28,31 @@ pub const Parameter = struct {
     required: bool = false,
     style: Style = .form,
     explode: bool = true,
+
+    pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
+        try jw.beginObject();
+
+        try jw.objectField("in");
+        try jw.write("query");
+        try jw.objectField("name");
+        try jw.write(self.name);
+        try jw.objectField("description");
+        try jw.write(self.description);
+        try jw.objectField("required");
+        try jw.write(self.required);
+        try jw.objectField("style");
+        try jw.write(self.style);
+        try jw.objectField("explode");
+        try jw.write(self.explode);
+
+        try jw.objectField("schema");
+        try jw.beginObject();
+        // TODO: Figure out the proper json type
+        try jw.objectField("type");
+        try jw.write("string");
+        try jw.endObject();
+        try jw.endObject();
+    }
 };
 
 pub const QueryParameterComponent = struct {

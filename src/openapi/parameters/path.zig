@@ -15,6 +15,30 @@ pub const Parameter = struct {
     style: Style = .simple,
     explode: bool = false,
     @"type": JSONType,
+
+    pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
+        try jw.beginObject();
+
+        try jw.objectField("in");
+        try jw.write("path");
+        try jw.objectField("name");
+        try jw.write(self.name);
+        try jw.objectField("description");
+        try jw.write(self.description);
+        try jw.objectField("required");
+        try jw.write(self.required);
+        try jw.objectField("style");
+        try jw.write(self.style);
+        try jw.objectField("explode");
+        try jw.write(self.explode);
+
+        try jw.objectField("schema");
+        try jw.beginObject();
+        try jw.objectField("type");
+        try jw.write(self.@"type");
+        try jw.endObject();
+        try jw.endObject();
+    }
 };
 
 pub const Parameters = struct {

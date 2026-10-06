@@ -21,6 +21,7 @@ pub const JSONType = enum {
 json_type: JSONType,
 json_array_type: ?JSONType = null,
 json_object_types: ?[]const JSONType = null,
+is_enum: bool = false,
 sx: Serde,
 
 // Serializer that should be invoked
@@ -78,6 +79,7 @@ pub const StringTypes = enum {
 pub fn string(comptime T: StringTypes) SerdeContext {
     return .{
         .json_type = .string,
+        .is_enum = if (T == .@"enum") true else false,
         .sx = .{ .string = T },
     };
 }
@@ -132,9 +134,10 @@ pub fn array(comptime T: ArrayTypes) SerdeContext {
         .json_type = .array,
         .json_array_type = switch (T) {
             .integers => .integer,
-            .csv => .string,
+            .csv, .bitflag => .string,
             else => null,
         },
+        .is_enum = if (T == .bitflag) true else false,
         .sx = .{ .array = T },
     };
 }

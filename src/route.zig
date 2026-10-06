@@ -20,6 +20,7 @@ pub const route_categories = &.{
     @import("routes/db/users.zig"),
     @import("routes/db/associations.zig"),
     @import("routes/db/qos.zig"),
+    @import("routes/openapi.zig"),
 };
 
 pub const RequestContext = struct {
@@ -42,7 +43,7 @@ pub const SlurmRequirements = struct {
     tres: bool = false,
 };
 
-const Description = struct {
+pub const Description = struct {
     name: []const u8,
     method: []const u8,
 
@@ -54,7 +55,7 @@ const Description = struct {
         var buf: [64]u8 = undefined;
 
         return .{
-            .method = std.ascii.lowerString(&buf, method),
+            .method = std.ascii.lowerString(&buf, method) ++ "",
             .name = itr2.rest(),
         };
     }
@@ -176,6 +177,29 @@ pub const RouteMeta = struct {
     pub const Response = struct {
         ref: openapi.SchemaComponent,
         description: []const u8,
+
+        pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
+            try jw.beginObject();
+            try jw.objectField("description");
+            try jw.write(self.description);
+
+            try jw.objectField("content");
+            try jw.beginObject();
+
+            try jw.objectField("application/json");
+            try jw.beginObject();
+            try jw.objectField("schema");
+            try jw.beginObject();
+            try jw.objectField("$ref");
+            try jw.write("#/components/schemas/" ++ @typeName(self.ref.api_type));
+            try jw.endObject();
+
+            try jw.endObject();
+
+            try jw.endObject();
+
+            try jw.endObject();
+        }
     };
 
     pub const Parameters = struct {
