@@ -88,7 +88,7 @@ pub fn GenericResponse(comptime name: [:0]const u8, comptime what: []const u8) S
 
     return .{
         .api_type = Response,
-        .properties = &.{
+        .properties = [_]Property{
             .{
                 .api_name = "data",
                 .name = &name_lower,
@@ -96,19 +96,7 @@ pub fn GenericResponse(comptime name: [:0]const u8, comptime what: []const u8) S
                 .ref = T,
                 .serde = .string(.print),
             },
-            .{
-                .name = "meta",
-                .description = "Metadata",
-                .ref = Meta,
-                .serde = .object(.native),
-            },
-            .{
-                .name = "error",
-                .description = "Errors",
-                .ref = Error,
-                .serde = .object(.native),
-            },
-        },
+        } ++ BaseResponseProperties,
         .serde = .object(.container),
         .child = T,
     };
@@ -231,529 +219,6 @@ pub const Coordinator: SchemaComponent = .{
             .name = "direct",
             .description = "Whether the Coordinator is direct",
             .serde = .boolean(.int),
-        },
-    },
-};
-
-pub const DBJob: SchemaComponent = .{
-    .api_type = slurm.db.Job,
-    .ignored_fields = &.{
-        "first_step_ptr", "resv_id", "show_full", "state_reason_prev",
-        "wckeyid",
-    },
-    .properties = &.{
-        .{
-            .name = "account",
-            .description = "Name of the Account",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "admin_comment",
-            .description = "Admin Comment",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "alloc_nodes",
-            .description = "Amount of allocated nodes",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "array_job_id",
-            .description = "Array ID of the Job",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "array_task_id",
-            .description = "Array Task ID of the Job",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        // TODO: Pending and max simultaenously running tasks
-//      .{
-//          .name = "array_task_str",
-//          .description = "",
-//          .serde = .integer(.native_zero_is_noval),
-//      },
-        .{
-            .name = "associd",
-            .description = "Association ID",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "blockid",
-            .description = "Block ID",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "cluster",
-            .description = "Name of the Cluster",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "constraints",
-            .description = "List of Constraints",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "container",
-            .description = "Name of the Container",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "db_index",
-            .description = "Database Index",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "derived_ec",
-            .description = "Derived exit code",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "derived_es",
-            .name = "comment",
-            .description = "Arbitrary job comment",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "elapsed",
-            .description = "Elapsed amount of seconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "eligible",
-            .description = "Time when the Job was eligible to run",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .name = "end",
-            .description = "Time when the Job ended",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .name = "env",
-            .description = "Environment",
-            .serde = .dict(.key_value, &.{ .string }),
-        },
-        .{
-            .name = "extra",
-            .description = "Extra information",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "failed_node",
-            .description = "Name of the Node that failed",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "flags",
-            .description = "Job flags",
-            .serde = .array(.bitflag),
-        },
-        .{
-            .name = "gid",
-            .description = "User GID",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "het_job_id",
-            .description = "Heterogenous Job ID",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "het_job_offset",
-            .description = "Heterogenous Job offset",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .api_name = "jobid",
-            .name = "id",
-            .description = "Job ID",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "jobname",
-            .name = "name",
-            .description = "Job Name",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "lineage",
-            .description = "Lineage",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "licenses",
-            .description = "List of Licenses",
-            .serde = .array(.csv),
-        },
-        .{
-            .name = "mcs_label",
-            .description = "MCS Label",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "nodes",
-            .description = "Nodes requested or allocated",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "partition",
-            .description = "Name of the Partition requested or allocated",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "priority",
-            .description = "Job priority",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "qosid",
-            .description = "QoS ID",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "qos_req",
-            .description = "QoS Requested",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "req_cpus",
-            .description = "Requested amount of CPUs",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "req_mem",
-            .description = "Requested amount of Memory in MiB",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "requid",
-            .description = "UID",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "restart_cnt",
-            .description = "How many times the Job restarted",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "resv_name",
-            .name = "reservation",
-            .description = "Name of the Reservation in use",
-            .serde = .string(.native),
-        },
-        .{
-            .api_name = "resv_req",
-            .name = "reservation_requested",
-            .description = "Name of the Reservation that was requested",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "script",
-            .description = "Content of the batch script",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "segment_size",
-            .description = "Segment Size",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "start",
-            .description = "Time when the Job started",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .name = "state",
-            .description = "State of the Job",
-            .serde = .array(.bitflag),
-        },
-        .{
-            .name = "steps",
-            .description = "List of Steps",
-            .ref = DBSteps,
-            .serde = .array(.list),
-        },
-        .{
-            .name = "std_err",
-            .description = "Path to Jobs' stderr",
-            .serde = .string(.job_stderr),
-        },
-        .{
-            .name = "std_in",
-            .description = "Path to Jobs' stdin",
-            .serde = .string(.job_stdin),
-        },
-        .{
-            .name = "std_out",
-            .description = "Path to Jobs' stdout",
-            .serde = .string(.job_stdout),
-        },
-        .{
-            .name = "submit",
-            .description = "Time when the Job was submitted",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .name = "submit_line",
-            .description = "Submit Line",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "suspended",
-            .description = "How long in seconds the Job was suspended",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "system_comment",
-            .description = "System Comment",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "sys_cpu_sec",
-            .description = "System CPU Seconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "sys_cpu_usec",
-            .description = "System CPU Microseconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "timelimit",
-            .description = "Time Limit in Minutes",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "tot_cpu_sec",
-            .description = "Total CPU Seconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "tot_cpu_usec",
-            .description = "Total CPU Microseconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "tres_alloc_str",
-            .name = "tres_allocated",
-            .description = "TRES allocated",
-            .serde = .dict(.key_value, &.{ .string, .integer }),
-        },
-        .{
-            .api_name = "tres_req_str",
-            .name = "tres_requested",
-            .description = "TRES requested",
-            .serde = .dict(.key_value, &.{ .string, .integer }),
-        },
-        .{
-            .name = "uid",
-            .description = "User ID",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "used_gres",
-            .description = "Used GRES",
-            .serde = .dict(.key_value, &.{ .string, .integer }),
-        },
-        .{
-            .name = "user",
-            .description = "User Name",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "user_cpu_sec",
-            .description = "User CPU Seconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "user_cpu_usec",
-            .description = "User CPU Microseconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "wckey",
-            .description = "WCKey",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "work_dir",
-            .description = "Working Directory",
-            .serde = .string(.native),
-        },
-    },
-};
-
-pub const DBStep: SchemaComponent = .{
-    .api_type = slurm.db.Step,
-    .ignored_fields = &.{
-        "job_ptr",
-    },
-    .properties = &.{
-        .{
-            .name = "container",
-            .description = "Container",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "cwd",
-            .description = "Working Directory",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "elapsed",
-            .description = "Number of seconds elapsed",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "end",
-            .description = "Time when the Step ends",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .name = "exitcode",
-            .description = "Step exitcode",
-            .serde = .integer(.std),
-        },
-        .{
-            .api_name = "nnodes",
-            .name = "node_count",
-            .description = "Number of Nodes allocated",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "nodes",
-            .description = "Nodes allocated to the Step",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "ntasks",
-            .description = "Step number of Tasks",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "pid_str",
-            .description = "Step PIDs",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "req_cpufreq_min",
-            .description = "Minimum CPU Frequency requested",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "req_cpufreq_max",
-            .description = "Maximum CPU Frequency requested",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-        // TODO: Better format
-            .name = "req_cpufreq_gov",
-            .description = "CPU Frequency Governor requested",
-            .serde = .integer(.native_zero_is_noval),
-        },
-        .{
-            .name = "requid",
-            .description = "Requested UID",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "start",
-            .description = "Time when the Step started",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .name = "state",
-            .description = "Step State",
-            .serde = .object(.native),
-        },
-//      .{
-//          .name = "stats",
-//          .description = "Job Stats",
-//          .serde = .object(.container),
-//      },
-        .{
-            .name = "step_id",
-            .description = "Step ID Infos",
-            .serde = .object(.container),
-            .ref = StepID,
-        },
-        .{
-            .api_name = "stepname",
-            .name = "name",
-            .description = "Name of the Step",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "std_err",
-            .description = "Path to Jobs' stderr",
-            .serde = .string(.job_stderr),
-        },
-        .{
-            .name = "std_in",
-            .description = "Path to Jobs' stdin",
-            .serde = .string(.job_stdin),
-        },
-        .{
-            .name = "std_out",
-            .description = "Path to Jobs' stdout",
-            .serde = .string(.job_stdout),
-        },
-        .{
-            .name = "submit_line",
-            .description = "Submit Line",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "suspended",
-            .description = "How long in seconds the Step was suspended",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "sys_cpu_sec",
-            .description = "System CPU Seconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "sys_cpu_usec",
-            .description = "System CPU Microseconds",
-            .serde = .integer(.native),
-        },
-//      .{
-//          .name = "task_dist",
-//          .description = "Task Distribution",
-//          .serde = .array(.bitflag),
-//      },
-        .{
-            .name = "timelimit",
-            .description = "Time Limit in Minutes",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "tot_cpu_sec",
-            .description = "Total CPU Seconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "tot_cpu_usec",
-            .description = "Total CPU Microseconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "tres_alloc_str",
-            .name = "tres_allocated",
-            .description = "TRES allocated",
-            .serde = .dict(.key_value, &.{ .string, .integer }),
-        },
-        .{
-            .name = "user_cpu_sec",
-            .description = "User CPU Seconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "user_cpu_usec",
-            .description = "User CPU Microseconds",
-            .serde = .integer(.native),
         },
     },
 };
@@ -1055,269 +520,12 @@ pub const WCKey: SchemaComponent = .{
     },
 };
 
-pub const User: SchemaComponent = .{
-    .api_type = slurm.db.User,
-    .properties = &.{
-        .{
-            .name = "admin_level",
-            .description = "Admin Level of the User",
-            .serde = .string(.native),
-        },
-        .{
-            .api_name = "assoc_list",
-            .name = "associations",
-            .description = "List of Associations (Short)",
-            .serde = .array(.assocs_short),
-            .ref = AssociationsShort,
-        },
-//      .{
-//          .name = "backfill_usage",
-//          .description = "Backfill Usage",
-//          .serde = .object(.container),
-//      },
-        .{
-            .api_name = "coord_accts",
-            .name = "coordinators",
-            .description = "List of Coordinators",
-            .serde = .array(.list),
-            .ref = Coordinators,
-        },
-        .{
-            .api_name = "def_qos_id",
-            .name = "default_qos",
-            .description = "Name of the Default QoS",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "default_acct",
-            .name = "default_account",
-            .description = "Default Account",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "default_wckey",
-            .description = "Default WCKey",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "flags",
-            .description = "User Flags",
-            .serde = .array(.bitflag),
-        },
-        .{
-            .name = "name",
-            .description = "Name of the User",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "old_name",
-            .description = "Old name of the User",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "uid",
-            .description = "UID of the User",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "wckey_list",
-            .name = "wckeys",
-            .description = "List of WCKeys",
-            .serde = .array(.list),
-            .ref = WCKeys,
-        },
-    },
-};
-
-pub const ControllerStatistics: SchemaComponent = .{
-    .api_type = slurm.slurmctld.Statistics,
-    .properties = &.{
-        .{
-            .api_name = "req_time",
-            .name = "request_time",
-            .description = "Time of request",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .api_name = "req_time_start",
-            .name = "request_time_start",
-            .description = "Time of request Start",
-            .serde = .integer(.timestamp),
-        },
-        .{
-            .name = "server_thread_count",
-            .description = "Number of active threads",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "agent_queue_size",
-            .description = "Number of queued outgoing RPC requests",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "agent_count",
-            .description = "Number of Agent threads",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "agent_thread_count",
-            .description = "Total amount of threads created by all agent threads",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "dbd_agent_queue_size",
-            .description = "Amount of messages queued for slurmdbd",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "gettimeofday_latency",
-            .description = "Latency of 1000 calls to gettimeofday syscall, in microseconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "schedule_cycle_max",
-            .description = "Max time of any scheduling cycle in microseconds, since last reset",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "schedule_cycle_last",
-            .description = "Time in microseconds for last scheduling cycle",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "schedule_cycle_sum",
-            .description = "Total run time of all scheduling cycles since last reset, in microseconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "schedule_cycle_sum",
-            .description = "Total run time of all scheduling cycles since last reset, in microseconds",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "schedule_cycle_counter",
-            .name = "schedule_cycles",
-            .description = "Number of scheduling cycles since last reset",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "meanCycle",
-            .name = "schedule_cycle_mean",
-            .description = "Mean time for all scheduling cycles, in microseconds",
-            .serde = .integer(.method_number_flat),
-            .extra = true,
-        },
-        .{
-            .api_name = "meanDepthCycle",
-            .name = "schedule_cycle_mean_depth",
-            .description = "Mean of number of jobs processed during scheduling",
-            .serde = .integer(.method_number_flat),
-            .extra = true,
-        },
-        .{
-            .api_name = "cyclesPerMinute",
-            .name = "schedule_cycleis_per_minute",
-            .description = "Number of scheduling cycles performed per minute",
-            .serde = .integer(.method_number_flat),
-            .extra = true,
-        },
-        .{
-            .name = "schedule_cycle_depth",
-            .description = "Total amount of jobs processed during scheduling",
-            .serde = .integer(.native),
-        },
-        // TODO:
-//      .{
-//          .name = "schedule_cycle_exit",
-//          .description = "schedule exit fields",
-//          .serde = .integer(.native),
-//      },
-        .{
-            .api_name = "schedule_queue_len",
-            .name = "schedule_queue_length",
-            .description = "Number of Jobs pending in queue",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "jobs_submitted",
-            .description = "Number of Jobs submitted",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "jobs_started",
-            .description = "Number of Jobs started",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "jobs_completed",
-            .description = "Number of Jobs completed",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "jobs_canceled",
-            .description = "Number of Jobs canceled",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "jobs_failed",
-            .description = "Number of Jobs failed",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "jobs_pending",
-            .description = "Number of Jobs pending",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "jobs_running",
-            .description = "Number of Jobs running",
-            .serde = .integer(.native),
-        },
-        .{
-            .api_name = "job_states_ts",
-            .name = "job_states_timestamp",
-            .description = "UNIX Timestamp",
-            .serde = .integer(.timestamp),
-        },
-    },
-};
-
-pub const DBJobs:            SchemaComponent = .array(DBJob, .list);
-pub const DBSteps:           SchemaComponent = .array(DBStep, .list);
 pub const Coordinators:      SchemaComponent = .array(Coordinator, .list);
-pub const Users:             SchemaComponent = .array(User, .list);
 pub const WCKeys:            SchemaComponent = .array(WCKey, .list);
 pub const Steps:             SchemaComponent = .array(Step, .load_response);
 
-pub const DBJobsResponse =       GenericResponse("DBJobs", "List of Database Jobs");
-pub const DBStepsResponse =      GenericResponse("DBSteps", "List of Database Steps");
 pub const CoordinatorsResponse = GenericResponse("Coordinators", "List of Database Coordinators");
-pub const UsersResponse =        GenericResponse("Users", "List of Database Users");
 pub const WCKeysResponse =       GenericResponse("WCKeys", "List of Database WCKeys");
-pub const DBJobResponse =        GenericResponse("DBJob", "Database Job Information");
-
-pub const ControllerStatisticsResponse: SchemaComponent = .{
-    .api_type = models.ControllerStatisticsResponse,
-    .properties = &.{
-        .{
-            .name = "statistics",
-            .description = "Controller statistics",
-            .serde = .string(.print),
-        },
-        .{
-            .name = "meta",
-            .description = "Metadata",
-            .ref = Meta,
-            .serde = .object(.native),
-        },
-        .{
-            .name = "error",
-            .description = "Errors",
-            .ref = Error,
-            .serde = .object(.native),
-        },
-    },
-};
 
 pub const BaseResponseProperties: []const Property = &.{
     .{
@@ -1342,7 +550,7 @@ pub const BaseResponse: SchemaComponent = .{
 pub const StepsResponse: SchemaComponent = .{
     .child = Steps,
     .api_type = models.StepsResponse,
-    .properties = &.{
+    .properties = [_]Property{
         .{
             .name = "last_update",
             .description = "Time of last update of this data",
@@ -1354,19 +562,7 @@ pub const StepsResponse: SchemaComponent = .{
             .ref = Steps,
             .serde = .string(.print),
         },
-        .{
-            .name = "meta",
-            .description = "Metadata",
-            .ref = Meta,
-            .serde = .object(.native),
-        },
-        .{
-            .name = "error",
-            .description = "Errors",
-            .ref = Error,
-            .serde = .object(.native),
-        },
-    },
+    } ++ BaseResponseProperties,
 };
 
 pub const SpecificationResponse: SchemaComponent = .{
@@ -1388,6 +584,17 @@ pub const ReservationResponse = reservation.ReservationResponse;
 pub const ReservationsResponse = reservation.ReservationsResponse;
 pub const Reservation = reservation.Reservation;
 
+const dbjob = @import("openapi/schemas/db/job.zig");
+pub const DBJob = dbjob.DBJob;
+pub const DBJobs = dbjob.DBJobs;
+pub const DBJobsResponse = dbjob.DBJobsResponse;
+pub const DBJobResponse = dbjob.DBJobResponse;
+
+const dbstep = @import("openapi/schemas/db/step.zig");
+pub const DBStep = dbstep.DBStep;
+pub const DBSteps = dbstep.DBSteps;
+pub const DBStepsResponse = dbstep.DBStepsResponse;
+
 const qos = @import("openapi/schemas/qos.zig");
 pub const QoS = qos.QoS;
 pub const QoSArray = qos.QoSArray;
@@ -1399,6 +606,10 @@ pub const Partition = part.Partition;
 pub const Partitions = part.Array;
 pub const PartitionsResponse = part.Response;
 pub const PartitionResponse = part.SingleResponse;
+
+pub const slurmctld = @import("openapi/schemas/slurmctld.zig");
+pub const ControllerStatistics = slurmctld.ControllerStatistics;
+pub const ControllerStatisticsResponse = slurmctld.ControllerStatisticsResponse;
 
 const node = @import("openapi/schemas/node.zig");
 pub const Node = node.Node;
@@ -1419,6 +630,12 @@ pub const Account = account.Account;
 pub const Accounts = account.Accounts;
 pub const AccountsResponse = account.Response;
 pub const AccountResponse = account.SingleResponse;
+
+const user = @import("openapi/schemas/db/user.zig");
+pub const User = user.User;
+pub const Users = user.Users;
+pub const UsersResponse = user.UsersResponse;
+pub const UserResponse = user.UserResponse;
 
 const assoc = @import("openapi/schemas/association.zig");
 pub const Association = assoc.Association;

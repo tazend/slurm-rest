@@ -18,6 +18,7 @@ pub const NodeResponse =              GenericResponse(openapi.Node);
 pub const PartitionResponse =         GenericResponse(openapi.Partition);
 pub const ReservationResponse =       GenericResponse(openapi.Reservation);
 pub const DBJobResponse =             GenericResponse(openapi.DBJob);
+pub const UserResponse =              GenericResponse(openapi.User);
 pub const QoSResponse =               GenericResponse(openapi.QoSArray);
 pub const QoSSingleResponse =         GenericResponse(openapi.QoS);
 pub const AccountSingleResponse =     GenericResponse(openapi.Account);
