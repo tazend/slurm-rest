@@ -4,30 +4,34 @@ const Stringify = std.json.Stringify;
 const slurm = @import("slurm");
 const httpz = @import("httpz");
 const RequestContext = @import("route.zig").RequestContext;
-const baseType = @import("json/Dumper.zig").baseType;
-
-const Parser = *const fn(target: anytype, value: [:0]const u8, comptime ctx: Context) anyerror!void;
 
 pub const Style = enum {
     simple,
     form,
 };
 
-pub const Context = struct {
-    field_name: [:0]const u8,
-    api_member: ?[:0]const u8 = null,
+pub const ParameterParser = enum {
+    list,
+    flags,
+    flags_int,
+    string,
+    integer,
+    @"enum",
+};
+
+pub const Reference = struct {
+    name: [:0]const u8,
+    component: QueryParameterComponent,
 };
 
 pub const Parameter = struct {
     api_name: ?[:0]const u8 = null,
-    api_member: ?[:0]const u8 = null,
-    api_type: ?type = null,
-    parse: Parser,
     name: [:0]const u8,
     description: []const u8,
     required: bool = false,
     style: Style = .form,
     explode: bool = true,
+    parser: ParameterParser,
 
     pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
         try jw.beginObject();
@@ -58,247 +62,295 @@ pub const Parameter = struct {
 pub const QueryParameterComponent = struct {
     api_type: type,
     parameters: []const Parameter = &.{},
+    refs: []const Reference = &.{},
 
     pub const init = parse;
 };
 
+pub const AssociationFlags: QueryParameterComponent = .{
+    .api_type = slurm.db.Association.Flags,
+    .parameters = &.{
+        .{
+            .api_name = "with_deleted",
+            .name = "with_deleted",
+            .description = "Whether to also show deleted Associations",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "with_usage",
+            .name = "with_usage",
+            .description = "Whether to also include Usage",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "only_defs",
+            .name = "only_defaults",
+            .description = "Whether to only show default Associations",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "raw_qos",
+            .name = "raw_qos",
+            .description = "Include raw QoS",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "sub_accts",
+            .name = "sub_account",
+            .description = "Include Sub Account Information",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "wopi",
+            .name = "without_parent_id",
+            .description = "Exclude Parent ID",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "wopl",
+            .name = "without_parent_limits",
+            .description = "Exclude Limits from Parents",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "qos_usage",
+            .name = "with_qos_usage",
+            .description = "Include QoS Usage",
+            .parser = .flags,
+        },
+    },
+};
+
 pub const Associations: QueryParameterComponent = .{
     .api_type = slurm.db.Association.Filter,
+    .refs = &.{
+        .{
+            .name = "flags",
+            .component = AssociationFlags,
+        },
+    },
     .parameters = &.{
         .{
             .api_name = "acct_list",
             .name = "accounts",
             .description = "Accounts to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "cluster_list",
             .name = "clusters",
             .description = "Clusters to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "def_qos_id_list",
             .name = "default_qos",
             .description = "Default QoS to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "id_list",
             .name = "ids",
             .description = "Association IDs to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "parent_acct_list",
             .name = "parent_accounts",
             .description = "Parent Accounts to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "partition_list",
             .name = "partitions",
             .description = "Partitions to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "qos_list",
             .name = "qos",
             .description = "QoS to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "user_list",
             .name = "users",
             .description = "Users to filter for",
-            .parse = list,
+            .parser = .list,
         },
+    },
+};
+
+pub const UserAssocFilter: QueryParameterComponent = .{
+    .api_type = slurm.db.Association.Filter,
+    .parameters = &.{
         .{
-            .api_member = "flags",
-            .name = "with_deleted",
-            .description = "Whether to also show deleted Associations",
-            .parse = flags,
-        },
-        .{
-            .api_member = "flags",
-            .name = "with_usage",
-            .description = "Whether to also include Usage",
-            .parse = flags,
-        },
-        .{
-            .api_name = "only_defs",
-            .api_member = "flags",
-            .name = "only_defaults",
-            .description = "Whether to only show default Associations",
-            .parse = flags,
-        },
-        .{
-            .api_member = "flags",
-            .name = "raw_qos",
-            .description = "Include raw QoS",
-            .parse = flags,
-        },
-        .{
-            .api_name = "sub_accts",
-            .api_member = "flags",
-            .name = "sub_account",
-            .description = "Include Sub Account Information",
-            .parse = flags,
-        },
-        .{
-            .api_name = "wopi",
-            .api_member = "flags",
-            .name = "without_parent_id",
-            .description = "Exclude Parent ID",
-            .parse = flags,
-        },
-        .{
-            .api_name = "wopl",
-            .api_member = "flags",
-            .name = "without_parent_limits",
-            .description = "Exclude Limits from Parents",
-            .parse = flags,
-        },
-        .{
-            .api_name = "qos_usage",
-            .api_member = "flags",
-            .name = "with_qos_usage",
-            .description = "Include QoS Usage",
-            .parse = flags,
+            .api_name = "user_list",
+            .name = "names",
+            .description = "Filter for specific User Names",
+            .parser = .list,
         },
     },
 };
 
 pub const Users: QueryParameterComponent = .{
     .api_type = slurm.db.User.Filter,
+    .refs = &.{
+        .{
+            .name = "assoc_cond",
+            .component = UserAssocFilter,
+        },
+    },
     .parameters = &.{
         .{
             .name = "admin_level",
             .description = "Admin Level to filter for",
-            .parse = enu,
+            .parser = .@"enum",
         },
         .{
             .api_name = "def_acct_list",
             .name = "default_accounts",
             .description = "Default Accounts to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "def_wckey_list",
             .name = "default_wckeys",
             .description = "Default WCKeys to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "with_assocs",
             .name = "with_associations",
             .description = "Include Association Infos",
-            .parse = flagInt,
+            .parser = .flags_int,
         },
         .{
             .api_name = "with_coords",
             .name = "with_coordinators",
             .description = "Include Coordinator Infos",
-            .parse = flagInt,
+            .parser = .flags_int,
         },
         .{
             .name = "with_deleted",
             .description = "Include deleted Users",
-            .parse = flagInt,
+            .parser = .flags_int,
         },
         .{
             .name = "with_wckeys",
             .description = "Include WCKeys",
-            .parse = flagInt,
+            .parser = .flags_int,
         },
         .{
             .name = "without_defaults",
             .description = "Exclude Defaults",
-            .parse = flagInt,
-        },
-        .{
-            .api_name = "user_list",
-            .api_member = "assoc_cond",
-            .name = "names",
-            .description = "Filter for specific User Names",
-            .parse = SubFilterParser(list),
+            .parser = .flags_int,
         },
     },
 };
 
 pub const Accounts: QueryParameterComponent = .{
     .api_type = slurm.db.Account.Filter,
+    .refs = &.{
+        .{
+            .name = "flags",
+            .component = AccountFlags,
+        },
+        .{
+            .name = "assoc_cond",
+            .component = AccountAssocFilter,
+        },
+    },
     .parameters = &.{
         .{
             .api_name = "description_list",
             .name = "descriptions",
             .description = "Descriptions to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "organization_list",
             .name = "organizations",
             .description = "Organizations to filter for",
-            .parse = list,
+            .parser = .list,
         },
+    },
+};
+
+pub const AccountFlags: QueryParameterComponent = .{
+    .api_type = slurm.db.Account.Flags,
+    .parameters = &.{
         .{
             .api_name = "deleted",
-            .api_member = "flags",
             .name = "with_deleted",
             .description = "Whether to also show deleted Accounts",
-            .parse = flags,
+            .parser = .flags,
         },
         .{
             .api_name = "with_assocs",
-            .api_member = "flags",
             .name = "with_associations",
             .description = "Whether to also fetch Associations",
-            .parse = flags,
+            .parser = .flags,
         },
         .{
             .api_name = "with_coords",
-            .api_member = "flags",
             .name = "with_coordinators",
             .description = "Whether to also fetch Coordinators",
-            .parse = flags,
+            .parser = .flags,
         },
+    },
+};
+
+pub const AccountAssocFilter: QueryParameterComponent = .{
+    .api_type = slurm.db.Association.Filter,
+    .parameters = &.{
         .{
             .api_name = "acct_list",
-            .api_member = "assoc_cond",
             .name = "names",
             .description = "Filter for specific Account Names",
-            .parse = SubFilterParser(list),
+            .parser = .list,
+        },
+    },
+};
+
+pub const QoSFlags: QueryParameterComponent = .{
+    .api_type = slurm.QoSFlags,
+    .parameters = &.{
+        .{
+            .api_name = "deleted",
+            .name = "with_deleted",
+            .description = "Whether to also show deleted QoS",
+            .parser = .flags,
         },
     },
 };
 
 pub const QoS: QueryParameterComponent = .{
     .api_type = slurm.db.QoS.Filter,
+    .refs = &.{
+        .{
+            .name = "flags",
+            .component = QoSFlags,
+        },
+    },
     .parameters = &.{
         .{
             .api_name = "description_list",
             .name = "descriptions",
             .description = "Descriptions to filter for",
-            .parse = list,
-        },
-        .{
-            .api_name = "deleted",
-            .api_member = "flags",
-            .name = "with_deleted",
-            .description = "Whether to also show deleted QoS",
-            .parse = flags,
+            .parser = .list,
         },
         .{
             .api_name = "id_list",
             .name = "ids",
             .description = "IDs to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "name_list",
             .name = "names",
             .description = "Names to filter for",
-            .parse = list,
+            .parser = .list,
         },
 //      .{
 //          .name = "preempt_mode",
@@ -308,117 +360,116 @@ pub const QoS: QueryParameterComponent = .{
     },
 };
 
+pub const JobFlags : QueryParameterComponent = .{
+    .api_type = slurm.db.Job.Flags,
+    .parameters = &.{
+        .{
+            .api_name = "duplicate",
+            .name = "show_duplicates",
+            .description = "Do not include duplicate Jobs",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "no_truncate",
+            .name = "truncate_usage_time",
+            .description = "Truncate time to the Start and End Time",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "script",
+            .name = "show_batch_script",
+            .description = "Fetch Batch script",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "environment",
+            .name = "show_environment",
+            .description = "Fetch Job Environment",
+            .parser = .flags,
+        },
+        .{
+            .api_name = "no_step",
+            .name = "skip_steps",
+            .description = "Do not include Step Data",
+            .parser = .flags,
+        },
+    },
+};
+
 pub const Job: QueryParameterComponent = .{
     .api_type = slurm.db.Job.Filter,
+    .refs = &.{
+        .{
+            .name = "flags",
+            .component = JobFlags,
+        },
+    },
     .parameters = &.{
         .{
             .api_name = "cluster_list",
             .name = "cluster",
             .description = "Name of the Cluster to filter",
-            .parse = list,
-        },
-        .{
-            .api_name = "duplicate",
-            .api_member = "flags",
-            .name = "show_duplicates",
-            .description = "Do not include duplicate Jobs",
-            .parse = flags,
-        },
-        .{
-            .api_name = "no_truncate",
-            .api_member = "flags",
-            .name = "truncate_usage_time",
-            .description = "Truncate time to the Start and End Time",
-            .parse = flags,
+            .parser = .list,
         },
         .{
             .api_name = "usage_start",
             .name = "start_time",
             .description = "Filter for Jobs which started at this UNIX Timestamp",
-            .parse = number,
+            .parser = .integer,
         },
         .{
             .api_name = "usage_end",
             .name = "end_time",
             .description = "Filter for Jobs which ended at this UNIX Timestamp",
-            .parse = number,
-        },
-        .{
-            .api_name = "script",
-            .api_member = "flags",
-            .name = "show_batch_script",
-            .description = "Fetch Batch script",
-            .parse = flags,
-        },
-        .{
-            .api_name = "environment",
-            .api_member = "flags",
-            .name = "show_environment",
-            .description = "Fetch Job Environment",
-            .parse = flags,
+            .parser = .integer,
         },
     },
 };
 
 pub const Jobs: QueryParameterComponent = .{
     .api_type = slurm.db.Job.Filter,
+    .refs = &.{
+        .{
+            .name = "flags",
+            .component = JobFlags,
+        },
+    },
     .parameters = &.{
         .{
             .api_name = "acct_list",
             .name = "account",
             .description = "Names of accounts to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "associd_list",
             .name = "association_id",
             .description = "Association ID to filter for",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "cluster_list",
             .name = "cluster",
             .description = "Name of the Cluster to filter",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "constraint_list",
             .name = "constraint",
             .description = "Filter for specific constraints",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "cpus_max",
             .name = "max_cpus",
             .description = "Filter for Jobs with at most this amount of CPUs",
-            .parse = number,
+            .parser = .integer,
         },
         .{
             .api_name = "cpus_min",
             .name = "min_cpus",
             .description = "Filter for Jobs with at least this amount of CPUs",
-            .parse = number,
-        },
-        .{
-            .api_name = "duplicate",
-            .api_member = "flags",
-            .name = "show_duplicates",
-            .description = "Do not include duplicate Jobs",
-            .parse = flags,
-        },
-        .{
-            .api_name = "no_step",
-            .api_member = "flags",
-            .name = "skip_steps",
-            .description = "Do not include Step Data",
-            .parse = flags,
-        },
-        .{
-            .api_name = "no_truncate",
-            .api_member = "flags",
-            .name = "truncate_usage_time",
-            .description = "Truncate time to the Start and End Time",
-            .parse = flags,
+            .parser = .integer,
         },
 //      .{
 //          .api_name = "runaway",
@@ -428,78 +479,64 @@ pub const Jobs: QueryParameterComponent = .{
 //          .parse = flags,
 //      },
         .{
-            .api_name = "script",
-            .api_member = "flags",
-            .name = "show_batch_script",
-            .description = "Fetch Batch script",
-            .parse = flags,
-        },
-        .{
-            .api_name = "environment",
-            .api_member = "flags",
-            .name = "show_environment",
-            .description = "Fetch Job Environment",
-            .parse = flags,
-        },
-        .{
             .api_name = "exitcode",
             .name = "exit_code",
             .description = "Filter for Jobs with this exit code",
-            .parse = number,
+            .parser = .integer,
         },
         .{
             .api_name = "groupid_list",
             .name = "group",
             .description = "Filter for Jobs submitted by this Group ID",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "jobname_list",
             .name = "name",
             .description = "Filter for Jobs with this Name",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "nodes_max",
             .name = "max_nodes",
             .description = "Filter for Jobs with at most this amount of Nodes",
-            .parse = number,
+            .parser = .integer,
         },
         .{
             .api_name = "nodes_min",
             .name = "min_nodes",
             .description = "Filter for Jobs with at least this amount of Nodes",
-            .parse = number,
+            .parser = .integer,
         },
         .{
             .api_name = "partition_list",
             .name = "partitition",
             .description = "Filter for Jobs with this Partition",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "qos_list",
             .name = "qos",
             .description = "Filter for Jobs with this QoS",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "reason_list",
             .name = "reason",
             .description = "Filter for Jobs with this Reason",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "resv_list",
             .name = "reservation",
             .description = "Filter for Jobs with this Reservation",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "state_list",
             .name = "state",
             .description = "Filter for Jobs with this State",
-            .parse = list,
+            .parser = .list,
         },
 //      .{
 //          .api_name = "step_list",
@@ -511,61 +548,93 @@ pub const Jobs: QueryParameterComponent = .{
             .api_name = "timelimit_max",
             .name = "max_time_limit",
             .description = "Filter for Jobs with at most this time limit",
-            .parse = number,
+            .parser = .integer,
         },
         .{
             .api_name = "timelimit_min",
             .name = "min_time_limit",
             .description = "Filter for Jobs with at least this time limit",
-            .parse = number,
+            .parser = .integer,
         },
         .{
             .api_name = "used_nodes",
             .name = "node",
             .description = "Filter for Jobs running on these nodes",
-            .parse = string,
+            .parser = .string,
         },
         .{
             .api_name = "userid_list",
             .name = "user",
             .description = "Filter for Jobs submitted by this User",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "wckey_list",
             .name = "wckey",
             .description = "Filter for Jobs with this WCKey",
-            .parse = list,
+            .parser = .list,
         },
         .{
             .api_name = "usage_start",
             .name = "start_time",
             .description = "Filter for Jobs which started at this UNIX Timestamp",
-            .parse = number,
+            .parser = .integer,
         },
         .{
             .api_name = "usage_end",
             .name = "end_time",
             .description = "Filter for Jobs which ended at this UNIX Timestamp",
-            .parse = number,
+            .parser = .integer,
         },
     },
 };
+
+pub fn initType(comptime T: type, arena: std.mem.Allocator) !T {
+    switch (@typeInfo(T)) {
+        .optional => |o| return try initType(o.child, arena),
+        .pointer => |p| {
+            const x = try arena.create(p.child);
+            x.* = try initType(p.child, arena);
+            return x;
+        },
+        .@"struct" => return .{},
+        else => @compileError("Unsupported Type"),
+    }
+}
 
 pub fn parse(comptime T: QueryParameterComponent, ctx: *RequestContext) !T.api_type {
     var f: T.api_type = .{};
     var query = try ctx.req.query();
     var query_it = query.iterator();
+    var refs_inited: [T.refs.len]bool = @splat(false);
+
     next: while (query_it.next()) |kv| {
         inline for (T.parameters) |param| {
-            const parse_ctx: Context = comptime .{
-                .field_name = param.api_name orelse param.name,
-                .api_member = param.api_member,
-            };
             if (std.mem.eql(u8, kv.key, param.name)) {
-                const value = try ctx.arena.dupeZ(u8, kv.value);
-                try param.parse(&f, value, parse_ctx);
+                try parseParam(&f, kv.value, param, ctx.arena);
                 continue :next;
+            }
+        }
+        inline for (T.refs, 0..) |ref, i| {
+            const r = &@field(f, ref.name);
+            const RefType = @TypeOf(r.*);
+
+            if (!refs_inited[i]) {
+                r.* = try initType(RefType, ctx.arena);
+                refs_inited[i] = true;
+            }
+
+            const real = if (@typeInfo(RefType) == .optional)
+                // Assume the unwrapped optional is a pointer for now
+                r.*.?
+            else
+                r;
+
+            inline for (ref.component.parameters) |param| {
+                if (std.mem.eql(u8, kv.key, param.name)) {
+                    try parseParam(real, kv.value, param, ctx.arena);
+                    continue :next;
+                }
             }
         }
         return error.InvalidQueryParameter;
@@ -573,63 +642,29 @@ pub fn parse(comptime T: QueryParameterComponent, ctx: *RequestContext) !T.api_t
     return f;
 }
 
-pub fn string(target: anytype, value: [:0]const u8, comptime ctx: Context) !void {
-    @field(target, ctx.field_name) = value;
-}
+pub fn parseParam(r: anytype, value: []const u8, comptime P: Parameter, arena: std.mem.Allocator) anyerror!void {
+    const fname = P.api_name orelse P.name;
+    const field = &@field(r, fname);
 
-pub fn number(target: anytype, value: [:0]const u8, comptime ctx: Context) !void {
-    const val = &@field(target, ctx.field_name);
-    const T = @TypeOf(val.*);
-    val.* = std.fmt.parseInt(T, value, 10) catch return error.InvalidNumber;
-}
-
-pub fn enu(target: anytype, value: [:0]const u8, comptime ctx: Context) !void {
-    const val = &@field(target, ctx.field_name);
-    const T = @TypeOf(val.*);
-    val.* = std.meta.stringToEnum(T, value) orelse return error.InvalidAdminLevel;
-}
-
-pub fn flagInt(target: anytype, value: [:0]const u8, comptime ctx: Context) !void {
-    if (std.mem.eql(u8, value, "true")) {
-        @field(target, ctx.field_name) = 1;
-    } else if (std.mem.eql(u8, value, "false")) {
-        @field(target, ctx.field_name) = 0;
-    } else return error.InvalidBooleanValue;
-}
-
-pub fn flags(target: anytype, value: [:0]const u8, comptime ctx: Context) !void {
-    var t = if (ctx.api_member) |m| @field(target, m) else target;
-    defer {
-        if (ctx.api_member) |m| @field(target, m) = t;
+    const T = @TypeOf(field.*);
+    switch (P.parser) {
+        .string => {
+            const v = try arena.dupeZ(u8, value);
+            field.* = v;
+        },
+        .integer => field.* = std.fmt.parseInt(T, value, 10) catch return error.InvalidNumber,
+        .@"enum" => field.* = std.meta.stringToEnum(T, value) orelse return error.InvalidEnumValue,
+        .flags, .flags_int => {
+            if (std.mem.eql(u8, value, "true")) {
+                field.* = if (P.parser == .flags) true else 1;
+            } else if (std.mem.eql(u8, value, "false")) {
+                field.* = if (P.parser == .flags) false else 0;
+            } else return error.InvalidBooleanValue;
+        },
+        .list => {
+            if (field.* == null) field.* = .initNoDestroyItems();
+            const v = try arena.dupeZ(u8, value);
+            field.*.?.append(v);
+        },
     }
-
-    if (std.mem.eql(u8, value, "true")) {
-        @field(t, ctx.field_name) = true;
-    } else if (std.mem.eql(u8, value, "false")) {
-        @field(t, ctx.field_name) = false;
-    } else return error.InvalidBooleanValue;
-}
-
-pub fn list(target: anytype, value: [:0]const u8, comptime ctx: Context) !void {
-    const current = @field(target, ctx.field_name);
-    if (current == null) {
-        @field(target, ctx.field_name) = .initNoDestroyItems();
-    }
-    @field(target, ctx.field_name).?.append(value);
-}
-
-pub fn SubFilterParser(comptime parser: Parser) Parser {
-    const H = struct {
-        fn handle(target: anytype, value: [:0]const u8, comptime ctx: Context) anyerror!void {
-            var current = @field(target, ctx.api_member.?) ;
-            defer @field(target, ctx.api_member.?) = current;
-            const T = @TypeOf(current);
-            if (current == null) {
-                current = try slurm.slurm_allocator.create(comptime baseType(T));
-                current.?.* = .{};
-            }
-            try parser(current.?, value, ctx);
-        }
-    };
-    return &H.handle;
 }
