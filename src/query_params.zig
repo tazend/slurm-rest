@@ -4,14 +4,31 @@ const Stringify = std.json.Stringify;
 const slurm = @import("slurm");
 const httpz = @import("httpz");
 const RequestContext = @import("route.zig").RequestContext;
+const RouteData = @import("route.zig").RouteData;
+pub const ParameterParser = @This();
+
+arena: std.mem.Allocator,
+request: *httpz.Request,
+qos: ?*slurm.List(*slurm.db.QoS) = null,
+db_conn: ?*slurm.db.Connection = null,
+
+pub fn init(ctx: *RequestContext, qos: ?*slurm.List(*slurm.db.QoS), db_conn: ?*slurm.db.Connection) ParameterParser {
+    return .{
+        .arena = ctx.arena,
+        .request = ctx.req,
+        .db_conn = db_conn,
+        .qos = qos,
+    };
+}
 
 pub const Style = enum {
     simple,
     form,
 };
 
-pub const ParameterParser = enum {
+pub const ParserType = enum {
     list,
+    list_qos_ids,
     flags,
     flags_int,
     string,
@@ -31,7 +48,7 @@ pub const Parameter = struct {
     required: bool = false,
     style: Style = .form,
     explode: bool = true,
-    parser: ParameterParser,
+    parser: ParserType,
 
     pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
         try jw.beginObject();
@@ -170,7 +187,7 @@ pub const Associations: QueryParameterComponent = .{
             .api_name = "qos_list",
             .name = "qos",
             .description = "QoS to filter for",
-            .parser = .list,
+            .parser = .list_qos_ids,
         },
         .{
             .api_name = "user_list",
@@ -602,16 +619,16 @@ pub fn initType(comptime T: type, arena: std.mem.Allocator) !T {
     }
 }
 
-pub fn parse(comptime T: QueryParameterComponent, ctx: *RequestContext) !T.api_type {
+pub fn parse(self: *ParameterParser, comptime T: QueryParameterComponent) !T.api_type {
     var f: T.api_type = .{};
-    var query = try ctx.req.query();
+    var query = try self.request.query();
     var query_it = query.iterator();
     var refs_inited: [T.refs.len]bool = @splat(false);
 
     next: while (query_it.next()) |kv| {
         inline for (T.parameters) |param| {
             if (std.mem.eql(u8, kv.key, param.name)) {
-                try parseParam(&f, kv.value, param, ctx.arena);
+                try self.parseParam(&f, kv.value, param);
                 continue :next;
             }
         }
@@ -620,7 +637,7 @@ pub fn parse(comptime T: QueryParameterComponent, ctx: *RequestContext) !T.api_t
             const RefType = @TypeOf(r.*);
 
             if (!refs_inited[i]) {
-                r.* = try initType(RefType, ctx.arena);
+                r.* = try initType(RefType, self.arena);
                 refs_inited[i] = true;
             }
 
@@ -632,7 +649,7 @@ pub fn parse(comptime T: QueryParameterComponent, ctx: *RequestContext) !T.api_t
 
             inline for (ref.component.parameters) |param| {
                 if (std.mem.eql(u8, kv.key, param.name)) {
-                    try parseParam(real, kv.value, param, ctx.arena);
+                    try self.parseParam(real, kv.value, param);
                     continue :next;
                 }
             }
@@ -642,14 +659,36 @@ pub fn parse(comptime T: QueryParameterComponent, ctx: *RequestContext) !T.api_t
     return f;
 }
 
-pub fn parseParam(r: anytype, value: []const u8, comptime P: Parameter, arena: std.mem.Allocator) anyerror!void {
+fn isInteger(s: []const u8) bool {
+    _ = std.fmt.parseInt(usize, s, 10) catch return false;
+    return true;
+}
+
+fn ensureQoSLoaded(self: *ParameterParser) !void {
+    if (self.qos == null) {
+        if (self.db_conn == null) self.db_conn = try slurm.db.Connection.open();
+        self.qos = try slurm.db.qos.load(self.db_conn.?, .{});
+    }
+}
+
+fn qosNameToId(qos: *slurm.List(*slurm.db.QoS), name: []const u8) ?u32 {
+    var it = qos.iter();
+    defer it.deinit();
+
+    while (it.next()) |i| {
+        const n = slurm.parseCStr(i.name) orelse continue;
+        if (std.mem.eql(u8, n, name)) return i.id;
+    } else return null;
+}
+
+pub fn parseParam(self: *ParameterParser, r: anytype, value: []const u8, comptime P: Parameter) anyerror!void {
     const fname = P.api_name orelse P.name;
     const field = &@field(r, fname);
 
     const T = @TypeOf(field.*);
     switch (P.parser) {
         .string => {
-            const v = try arena.dupeZ(u8, value);
+            const v = try self.arena.dupeZ(u8, value);
             field.* = v;
         },
         .integer => field.* = std.fmt.parseInt(T, value, 10) catch return error.InvalidNumber,
@@ -663,8 +702,23 @@ pub fn parseParam(r: anytype, value: []const u8, comptime P: Parameter, arena: s
         },
         .list => {
             if (field.* == null) field.* = .initNoDestroyItems();
-            const v = try arena.dupeZ(u8, value);
-            field.*.?.append(v);
+            const item = try self.arena.dupeZ(u8, value);
+            field.*.?.append(item);
+
+        },
+        .list_qos_ids => {
+            if (field.* == null) field.* = .initNoDestroyItems();
+
+            const value_fmt = if (!isInteger(value)) blk: {
+                try self.ensureQoSLoaded();
+                if (qosNameToId(self.qos.?, value)) |id|
+                    break :blk try std.fmt.allocPrintSentinel(self.arena, "{d}", .{id}, 0)
+                else
+                    // NOTE: Maybe Error on invalid QoS?
+                    break :blk try self.arena.dupeZ(u8, value);
+            } else try self.arena.dupeZ(u8, value);
+
+            field.*.?.append(value_fmt);
         },
     }
 }

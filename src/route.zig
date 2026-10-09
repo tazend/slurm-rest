@@ -100,10 +100,19 @@ pub fn RouteData(comptime R: type) type {
                 try slurm.db.qos.load(db_conn, .{})
             else {};
 
+            const query = if (Meta.parameters.query) |q| blk: {
+                var qparser = params_query.init(
+                    ctx,
+                    if (Meta.requirements.qos) qos else null,
+                    if (Meta.requirements.db_conn) db_conn else null,
+                );
+                break :blk try qparser.parse(q);
+            } else {};
+
             return .{
                 .parameters = .{
                     .path = if (Meta.parameters.path) |p| try p.init(ctx) else {},
-                    .query = if (Meta.parameters.query) |q| try q.init(ctx) else {},
+                    .query = query,
                 },
                 .body = if (Meta.requestBody) |b| try Parser.parse(b, ctx.arena, ctx.req.body() orelse return error.EmptyBody),
                 .req = ctx.req,
