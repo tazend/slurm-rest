@@ -8,6 +8,7 @@ const SchemaComponent = openapi.SchemaComponent;
 pub const AssociationsShort: SchemaComponent = .array(AssociationShort, .assocs_short);
 pub const Associations:      SchemaComponent = .array(Association, .list);
 pub const AssociationsResponse = openapi.GenericResponse("Associations", "List of Associations");
+pub const AssociationResponse = openapi.GenericResponse("Association", "Database Association Information");
 
 pub const AssociationShort: SchemaComponent = .{
     .api_type = models.AssociationShort,
@@ -236,3 +237,119 @@ pub const Association: SchemaComponent = .{
     .properties = ReadOnlyProperties ++ AssociationUpdatable,
 };
 
+pub const query = struct {
+
+    pub const Flags: openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.Association.Flags,
+        .parameters = &.{
+            .{
+                .api_name = "with_deleted",
+                .name = "with_deleted",
+                .description = "Whether to also show deleted Associations",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "with_usage",
+                .name = "with_usage",
+                .description = "Whether to also include Usage",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "only_defs",
+                .name = "only_defaults",
+                .description = "Whether to only show default Associations",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "raw_qos",
+                .name = "raw_qos",
+                .description = "Include raw QoS",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "sub_accts",
+                .name = "sub_account",
+                .description = "Include Sub Account Information",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "wopi",
+                .name = "without_parent_id",
+                .description = "Exclude Parent ID",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "wopl",
+                .name = "without_parent_limits",
+                .description = "Exclude Limits from Parents",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "qos_usage",
+                .name = "with_qos_usage",
+                .description = "Include QoS Usage",
+                .parser = .flags,
+            },
+        },
+    };
+
+    pub const Filter: openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.Association.Filter,
+        .refs = &.{
+            .{
+                .name = "flags",
+                .component = Flags,
+            },
+        },
+        .parameters = &.{
+            .{
+                .api_name = "acct_list",
+                .name = "accounts",
+                .description = "Accounts to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "cluster_list",
+                .name = "clusters",
+                .description = "Clusters to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "def_qos_id_list",
+                .name = "default_qos",
+                .description = "Default QoS to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "id_list",
+                .name = "ids",
+                .description = "Association IDs to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "parent_acct_list",
+                .name = "parent_accounts",
+                .description = "Parent Accounts to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "partition_list",
+                .name = "partitions",
+                .description = "Partitions to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "qos_list",
+                .name = "qos",
+                .description = "QoS to filter for",
+                .parser = .list_qos_ids,
+            },
+            .{
+                .api_name = "user_list",
+                .name = "users",
+                .description = "Users to filter for",
+                .parser = .list,
+            },
+        },
+    };
+};

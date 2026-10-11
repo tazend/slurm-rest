@@ -9,7 +9,6 @@ const RouteData = route.RouteData;
 const SlurmRequirements = route.SlurmRequirements;
 const dump = @import("../../json/Dumper.zig").dump;
 
-const query_params = @import("../../query_params.zig");
 const path_params = @import("../../openapi/parameters/path.zig");
 
 pub const routes = &.{
@@ -31,7 +30,7 @@ pub const @"GET /db/jobs" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .query = query_params.Jobs,
+            .query = openapi.dbjob.query.FilerMany,
         },
         .requirements = .{
             .db_conn = true,
@@ -61,7 +60,7 @@ pub const @"GET /db/jobs/:id" = struct {
         },
         .parameters = .{
             .path = path_params.JobIDPathParameter,
-            .query = query_params.Job,
+            .query = openapi.dbjob.query.FilterSingle,
         },
         .requirements = .{
             .db_conn = true,

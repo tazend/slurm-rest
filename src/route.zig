@@ -27,7 +27,6 @@ pub const RequestContext = struct {
     req: *httpz.Request,
     res: *httpz.Response,
     arena: std.mem.Allocator,
-    handler: *Handler,
 };
 
 pub const Action = *const fn (*Handler, *httpz.Request, *httpz.Response) anyerror!void;
@@ -124,6 +123,23 @@ pub fn RouteData(comptime R: type) type {
             };
         }
 
+        pub fn getQueryParser(self: @This()) params_query.ParameterParser {
+            return .{
+                .arena = self.arena,
+                .request = self.req,
+                .qos = if (Meta.requirements.qos) self.qos else null,
+                .db_conn = if (Meta.requirements.db_conn) self.db_conn else null,
+            };
+        }
+
+        pub fn pathIdToFilter(self: @This(), comptime key: [:0]const u8, comptime Q: params_query.QueryParameterComponent) !Q.api_type {
+            var parser = self.getQueryParser();
+            var ret: Q.api_type = .{};
+            var refs_inited: [Q.refs.len]bool = @splat(false);
+            try parser.processParamsForQueryItem(Q, &refs_inited, &ret, key, self.parameters.path.name);
+            return ret;
+        }
+
         pub fn deinit(self: *@This()) void {
             if (Meta.requirements.tres) self.tres.deinit();
             if (Meta.requirements.qos) self.qos.deinit();
@@ -139,11 +155,11 @@ pub fn RouteData(comptime R: type) type {
 pub fn handlerRoute(comptime R: type) Action {
     const H = struct {
         fn handle(h: *Handler, req: *httpz.Request, res: *httpz.Response) anyerror!void {
+            _ = h;
             var ctx: RequestContext = .{
                 .arena = res.arena,
                 .res = res,
                 .req = req,
-                .handler = h,
             };
             const B = R.Meta.response.ref.api_type;
 

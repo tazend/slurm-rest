@@ -4,6 +4,8 @@ const JSONType = SerdeContext.JSONType;
 const slurm = @import("slurm");
 const models = @import("models.zig");
 
+pub const QueryParameterComponent = @import("query_params.zig").QueryParameterComponent;
+
 /// A specific Member or "Property" of a Schema Component
 pub const Property = struct {
     api_name: ?[:0]const u8 = null,
@@ -246,18 +248,18 @@ pub const ReservationResponse = reservation.ReservationResponse;
 pub const ReservationsResponse = reservation.ReservationsResponse;
 pub const Reservation = reservation.Reservation;
 
-const dbjob = @import("openapi/schemas/db/job.zig");
+pub const dbjob = @import("openapi/schemas/db/job.zig");
 pub const DBJob = dbjob.DBJob;
 pub const DBJobs = dbjob.DBJobs;
 pub const DBJobsResponse = dbjob.DBJobsResponse;
 pub const DBJobResponse = dbjob.DBJobResponse;
 
-const dbstep = @import("openapi/schemas/db/step.zig");
+pub const dbstep = @import("openapi/schemas/db/step.zig");
 pub const DBStep = dbstep.DBStep;
 pub const DBSteps = dbstep.DBSteps;
 pub const DBStepsResponse = dbstep.DBStepsResponse;
 
-const qos = @import("openapi/schemas/qos.zig");
+pub const qos = @import("openapi/schemas/qos.zig");
 pub const QoS = qos.QoS;
 pub const QoSArray = qos.QoSArray;
 pub const QoSResponse = qos.Response;
@@ -293,13 +295,13 @@ pub const Steps = step.Steps;
 pub const StepsResponse = step.StepsResponse;
 pub const StepID = step.StepID;
 
-const account = @import("openapi/schemas/account.zig");
+pub const account = @import("openapi/schemas/account.zig");
 pub const Account = account.Account;
 pub const Accounts = account.Accounts;
 pub const AccountsResponse = account.Response;
 pub const AccountResponse = account.SingleResponse;
 
-const user = @import("openapi/schemas/db/user.zig");
+pub const user = @import("openapi/schemas/db/user.zig");
 pub const User = user.User;
 pub const Users = user.Users;
 pub const UsersResponse = user.UsersResponse;
@@ -315,7 +317,7 @@ pub const WCKey = wckey.WCKey;
 pub const WCKeys = wckey.WCKeys;
 pub const WCKeysResponse = wckey.WCKeysResponse;
 
-const assoc = @import("openapi/schemas/association.zig");
+pub const assoc = @import("openapi/schemas/association.zig");
 pub const Association = assoc.Association;
 pub const Associations = assoc.Associations;
 pub const AssociationShort = assoc.AssociationShort;

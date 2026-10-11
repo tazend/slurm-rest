@@ -218,3 +218,52 @@ pub const Limits: []const Property = &.{
         .serde = .dict(.key_value, &.{ .integer, .string }),
     },
 };
+
+pub const query = struct {
+    pub const Flags: openapi.QueryParameterComponent = .{
+        .api_type = slurm.QoSFlags,
+        .parameters = &.{
+            .{
+                .api_name = "deleted",
+                .name = "with_deleted",
+                .description = "Whether to also show deleted QoS",
+                .parser = .flags,
+            },
+        },
+    };
+
+    pub const Filter: openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.QoS.Filter,
+        .refs = &.{
+            .{
+                .name = "flags",
+                .component = Flags,
+            },
+        },
+        .parameters = &.{
+            .{
+                .api_name = "description_list",
+                .name = "descriptions",
+                .description = "Descriptions to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "id_list",
+                .name = "ids",
+                .description = "IDs to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "name_list",
+                .name = "names",
+                .description = "Names to filter for",
+                .parser = .list,
+            },
+    //      .{
+    //          .name = "preempt_mode",
+    //          .description = "Preempt Mode to filter for",
+    //          .parse = TODO,
+    //      },
+        },
+    };
+};

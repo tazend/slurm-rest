@@ -358,3 +358,233 @@ pub const DBJob: SchemaComponent = .{
     },
 };
 
+pub const query = struct {
+    pub const Flags : openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.Job.Flags,
+        .parameters = &.{
+            .{
+                .api_name = "duplicate",
+                .name = "show_duplicates",
+                .description = "Do not include duplicate Jobs",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "no_truncate",
+                .name = "truncate_usage_time",
+                .description = "Truncate time to the Start and End Time",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "script",
+                .name = "show_batch_script",
+                .description = "Fetch Batch script",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "environment",
+                .name = "show_environment",
+                .description = "Fetch Job Environment",
+                .parser = .flags,
+            },
+            .{
+                .api_name = "no_step",
+                .name = "skip_steps",
+                .description = "Do not include Step Data",
+                .parser = .flags,
+            },
+        },
+    };
+
+    pub const FilterSingle: openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.Job.Filter,
+        .refs = &.{
+            .{
+                .name = "flags",
+                .component = Flags,
+            },
+        },
+        .parameters = &.{
+            .{
+                .api_name = "cluster_list",
+                .name = "cluster",
+                .description = "Name of the Cluster to filter",
+                .parser = .list,
+            },
+            .{
+                .api_name = "usage_start",
+                .name = "start_time",
+                .description = "Filter for Jobs which started at this UNIX Timestamp",
+                .parser = .integer,
+            },
+            .{
+                .api_name = "usage_end",
+                .name = "end_time",
+                .description = "Filter for Jobs which ended at this UNIX Timestamp",
+                .parser = .integer,
+            },
+        },
+    };
+
+    pub const FilerMany: openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.Job.Filter,
+        .refs = &.{
+            .{
+                .name = "flags",
+                .component = Flags,
+            },
+        },
+        .parameters = &.{
+            .{
+                .api_name = "acct_list",
+                .name = "account",
+                .description = "Names of accounts to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "associd_list",
+                .name = "association_id",
+                .description = "Association ID to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "cluster_list",
+                .name = "cluster",
+                .description = "Name of the Cluster to filter",
+                .parser = .list,
+            },
+            .{
+                .api_name = "constraint_list",
+                .name = "constraint",
+                .description = "Filter for specific constraints",
+                .parser = .list,
+            },
+            .{
+                .api_name = "cpus_max",
+                .name = "max_cpus",
+                .description = "Filter for Jobs with at most this amount of CPUs",
+                .parser = .integer,
+            },
+            .{
+                .api_name = "cpus_min",
+                .name = "min_cpus",
+                .description = "Filter for Jobs with at least this amount of CPUs",
+                .parser = .integer,
+            },
+    //      .{
+    //          .api_name = "runaway",
+    //          .api_member = "flags",
+    //          .name = "only_runaway",
+    //          .description = "Only show runaway jobs",
+    //          .parse = flags,
+    //      },
+            .{
+                .api_name = "exitcode",
+                .name = "exit_code",
+                .description = "Filter for Jobs with this exit code",
+                .parser = .integer,
+            },
+            .{
+                .api_name = "groupid_list",
+                .name = "group",
+                .description = "Filter for Jobs submitted by this Group ID",
+                .parser = .list,
+            },
+            .{
+                .api_name = "jobname_list",
+                .name = "name",
+                .description = "Filter for Jobs with this Name",
+                .parser = .list,
+            },
+            .{
+                .api_name = "nodes_max",
+                .name = "max_nodes",
+                .description = "Filter for Jobs with at most this amount of Nodes",
+                .parser = .integer,
+            },
+            .{
+                .api_name = "nodes_min",
+                .name = "min_nodes",
+                .description = "Filter for Jobs with at least this amount of Nodes",
+                .parser = .integer,
+            },
+            .{
+                .api_name = "partition_list",
+                .name = "partitition",
+                .description = "Filter for Jobs with this Partition",
+                .parser = .list,
+            },
+            .{
+                .api_name = "qos_list",
+                .name = "qos",
+                .description = "Filter for Jobs with this QoS",
+                .parser = .list,
+            },
+            .{
+                .api_name = "reason_list",
+                .name = "reason",
+                .description = "Filter for Jobs with this Reason",
+                .parser = .list,
+            },
+            .{
+                .api_name = "resv_list",
+                .name = "reservation",
+                .description = "Filter for Jobs with this Reservation",
+                .parser = .list,
+            },
+            .{
+                .api_name = "state_list",
+                .name = "state",
+                .description = "Filter for Jobs with this State",
+                .parser = .list,
+            },
+    //      .{
+    //          .api_name = "step_list",
+    //          .name = "step",
+    //          .description = "Filter for Jobs with this Step",
+    //          .parse = list,
+    //      },
+            .{
+                .api_name = "timelimit_max",
+                .name = "max_time_limit",
+                .description = "Filter for Jobs with at most this time limit",
+                .parser = .integer,
+            },
+            .{
+                .api_name = "timelimit_min",
+                .name = "min_time_limit",
+                .description = "Filter for Jobs with at least this time limit",
+                .parser = .integer,
+            },
+            .{
+                .api_name = "used_nodes",
+                .name = "node",
+                .description = "Filter for Jobs running on these nodes",
+                .parser = .string,
+            },
+            .{
+                .api_name = "userid_list",
+                .name = "user",
+                .description = "Filter for Jobs submitted by this User",
+                .parser = .list,
+            },
+            .{
+                .api_name = "wckey_list",
+                .name = "wckey",
+                .description = "Filter for Jobs with this WCKey",
+                .parser = .list,
+            },
+            .{
+                .api_name = "usage_start",
+                .name = "start_time",
+                .description = "Filter for Jobs which started at this UNIX Timestamp",
+                .parser = .integer,
+            },
+            .{
+                .api_name = "usage_end",
+                .name = "end_time",
+                .description = "Filter for Jobs which ended at this UNIX Timestamp",
+                .parser = .integer,
+            },
+        },
+    };
+};

@@ -83,3 +83,74 @@ pub const User: SchemaComponent = .{
     },
 };
 
+pub const query = struct {
+
+    pub const AssocFilter: openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.Association.Filter,
+        .parameters = &.{
+            .{
+                .api_name = "user_list",
+                .name = "names",
+                .description = "Filter for specific User Names",
+                .parser = .list,
+            },
+        },
+    };
+
+    pub const Filter: openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.User.Filter,
+        .refs = &.{
+            .{
+                .name = "assoc_cond",
+                .component = AssocFilter,
+            },
+        },
+        .parameters = &.{
+            .{
+                .name = "admin_level",
+                .description = "Admin Level to filter for",
+                .parser = .@"enum",
+            },
+            .{
+                .api_name = "def_acct_list",
+                .name = "default_accounts",
+                .description = "Default Accounts to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "def_wckey_list",
+                .name = "default_wckeys",
+                .description = "Default WCKeys to filter for",
+                .parser = .list,
+            },
+            .{
+                .api_name = "with_assocs",
+                .name = "with_associations",
+                .description = "Include Association Infos",
+                .parser = .flags_int,
+            },
+            .{
+                .api_name = "with_coords",
+                .name = "with_coordinators",
+                .description = "Include Coordinator Infos",
+                .parser = .flags_int,
+            },
+            .{
+                .name = "with_deleted",
+                .description = "Include deleted Users",
+                .parser = .flags_int,
+            },
+            .{
+                .name = "with_wckeys",
+                .description = "Include WCKeys",
+                .parser = .flags_int,
+            },
+            .{
+                .name = "without_defaults",
+                .description = "Exclude Defaults",
+                .parser = .flags_int,
+            },
+        },
+    };
+
+};
