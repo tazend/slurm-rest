@@ -72,6 +72,17 @@ pub const JobIDPathParameter: Parameters = .{
     },
 };
 
+pub const AssociationSingle: Parameters = .{
+    .api_type = models.IDPathParameter([]const u8),
+    .parameters = &.{
+        .{
+            .name = "id",
+            .description = "ID of the Association to operate on",
+            .type = .string,
+        },
+    },
+};
+
 pub const Node = NamePathParameter("Node");
 pub const QoS = NamePathParameter("QoS");
 pub const Partition = NamePathParameter("Partition");
