@@ -77,6 +77,7 @@ pub const QoS = NamePathParameter("QoS");
 pub const Partition = NamePathParameter("Partition");
 pub const Reservation = NamePathParameter("Reservation");
 pub const AccountParameter = NamePathParameter("Account");
+pub const User = NamePathParameter("User");
 
 pub fn parse(comptime P: Parameters, ctx: *RequestContext) !P.api_type {
     var out: P.api_type = undefined;

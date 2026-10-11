@@ -5,6 +5,8 @@ const models = @import("../../../models.zig");
 const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
+const QueryParameter = @import("../../../query_params.zig").Parameter;
+
 pub const Users: SchemaComponent = .array(User, .list);
 pub const UsersResponse = openapi.GenericResponse("Users", "List of Database Users");
 pub const UserResponse = openapi.GenericResponse("User", "Database User Information");
@@ -85,6 +87,36 @@ pub const User: SchemaComponent = .{
 
 pub const query = struct {
 
+    const FlagsParameters: []const QueryParameter = &.{
+        .{
+            .api_name = "with_assocs",
+            .name = "with_associations",
+            .description = "Include Association Infos",
+            .parser = .flags_int,
+        },
+        .{
+            .api_name = "with_coords",
+            .name = "with_coordinators",
+            .description = "Include Coordinator Infos",
+            .parser = .flags_int,
+        },
+        .{
+            .name = "with_deleted",
+            .description = "Include deleted Users",
+            .parser = .flags_int,
+        },
+        .{
+            .name = "with_wckeys",
+            .description = "Include WCKeys",
+            .parser = .flags_int,
+        },
+        .{
+            .name = "without_defaults",
+            .description = "Exclude Defaults",
+            .parser = .flags_int,
+        },
+    };
+
     pub const AssocFilter: openapi.QueryParameterComponent = .{
         .api_type = slurm.db.Association.Filter,
         .parameters = &.{
@@ -97,7 +129,12 @@ pub const query = struct {
         },
     };
 
-    pub const Filter: openapi.QueryParameterComponent = .{
+    pub const FilterSingle: openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.User.Filter,
+        .parameters = FlagsParameters,
+    };
+
+    pub const FilterMany: openapi.QueryParameterComponent = .{
         .api_type = slurm.db.User.Filter,
         .refs = &.{
             .{
@@ -105,7 +142,7 @@ pub const query = struct {
                 .component = AssocFilter,
             },
         },
-        .parameters = &.{
+        .parameters = [_]QueryParameter{
             .{
                 .name = "admin_level",
                 .description = "Admin Level to filter for",
@@ -123,34 +160,7 @@ pub const query = struct {
                 .description = "Default WCKeys to filter for",
                 .parser = .list,
             },
-            .{
-                .api_name = "with_assocs",
-                .name = "with_associations",
-                .description = "Include Association Infos",
-                .parser = .flags_int,
-            },
-            .{
-                .api_name = "with_coords",
-                .name = "with_coordinators",
-                .description = "Include Coordinator Infos",
-                .parser = .flags_int,
-            },
-            .{
-                .name = "with_deleted",
-                .description = "Include deleted Users",
-                .parser = .flags_int,
-            },
-            .{
-                .name = "with_wckeys",
-                .description = "Include WCKeys",
-                .parser = .flags_int,
-            },
-            .{
-                .name = "without_defaults",
-                .description = "Exclude Defaults",
-                .parser = .flags_int,
-            },
-        },
+        } ++ FlagsParameters,
     };
 
 };
