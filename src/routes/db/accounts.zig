@@ -72,6 +72,7 @@ pub const @"GET /db/accounts/:name" = struct {
         },
         .parameters = .{
             .path = path_params.AccountParameter,
+            .query = openapi.account.query.FilterSingle,
         },
         .requirements = .{
             .db_conn = true,
@@ -80,9 +81,10 @@ pub const @"GET /db/accounts/:name" = struct {
 
     pub fn handle(ctx: *const RouteData(@This())) !models.AccountSingleResponse {
         // TODO: make sure to free all lists
-        const filter = try ctx.pathIdToFilter("names", openapi.account.query.Accounts);
+        var names_filter = try ctx.pathIdToFilter("names", openapi.account.query.Accounts);
+        names_filter.flags = ctx.parameters.query.flags;
 
-        const resp = try slurm.db.account.load(ctx.db_conn, filter);
+        const resp = try slurm.db.account.load(ctx.db_conn, names_filter);
         defer resp.deinit();
 
         var iter = resp.iter();

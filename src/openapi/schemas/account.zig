@@ -86,6 +86,17 @@ pub const query = struct {
         },
     };
 
+    pub const FilterSingle: openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.Account.Filter,
+        .refs = &.{
+            .{
+                .name = "flags",
+                .component = AccountFlags,
+            },
+        },
+        .parameters = &.{},
+    };
+
     pub const AccountFlags: openapi.QueryParameterComponent = .{
         .api_type = slurm.db.Account.Flags,
         .parameters = &.{
