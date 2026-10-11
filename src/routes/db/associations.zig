@@ -12,6 +12,7 @@ const path_params = @import("../../openapi/parameters/path.zig");
 
 pub const routes = &.{
     @"GET /db/associations",
+    @"GET /db/associations/:id",
 };
 
 pub const @"GET /db/associations" = struct {
@@ -27,7 +28,7 @@ pub const @"GET /db/associations" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .query = openapi.assoc.query.Filter,
+            .query = openapi.assoc.query.FilterMany,
         },
         .requirements = .{
             .db_conn = true,
@@ -54,7 +55,8 @@ pub const @"GET /db/associations/:id" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .query = openapi.assoc.query.Filter,
+            .query = openapi.assoc.query.FilterSingle,
+            .path = path_params.AssociationSingle,
         },
         .requirements = .{
             .db_conn = true,
@@ -62,8 +64,18 @@ pub const @"GET /db/associations/:id" = struct {
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.AssociationResponse {
-        const resp = try slurm.db.association.load(ctx.db_conn, ctx.parameters.query);
+        // TODO: make sure to free all lists
+        var names_filter = try ctx.pathIdToFilter("ids", openapi.assoc.query.FilterMany);
+        names_filter.flags = ctx.parameters.query.flags;
+
+        const resp = try slurm.db.association.load(ctx.db_conn, names_filter);
         defer resp.deinit();
-        return .{ .data = try ctx.dumpData(resp)};
+
+        var iter = resp.iter();
+        defer iter.deinit();
+
+        const assoc = iter.next() orelse return .{ .data = "null" };
+
+        return .{ .data = try ctx.dumpData(assoc)};
     }
 };

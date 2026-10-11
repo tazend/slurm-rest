@@ -7,6 +7,7 @@ const SerdeContext = @import("json/SerdeContext.zig");
 
 pub const AccountsResponse =          GenericResponse(openapi.Accounts);
 pub const AssociationsResponse =      GenericResponse(openapi.Associations);
+pub const AssociationResponse =       GenericResponse(openapi.Association);
 pub const DBJobsResponse =            GenericResponse(openapi.DBJobs);
 pub const DBStepsResponse =           GenericResponse(openapi.DBSteps);
 pub const CoordinatorsResponse =      GenericResponse(openapi.Coordinators);

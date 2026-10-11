@@ -293,7 +293,17 @@ pub const query = struct {
         },
     };
 
-    pub const Filter: openapi.QueryParameterComponent = .{
+    pub const FilterSingle: openapi.QueryParameterComponent = .{
+        .api_type = slurm.db.Association.Filter,
+        .refs = &.{
+            .{
+                .name = "flags",
+                .component = Flags,
+            },
+        },
+    };
+
+    pub const FilterMany: openapi.QueryParameterComponent = .{
         .api_type = slurm.db.Association.Filter,
         .refs = &.{
             .{
