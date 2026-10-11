@@ -133,10 +133,19 @@ pub fn RouteData(comptime R: type) type {
         }
 
         pub fn pathIdToFilter(self: @This(), comptime key: [:0]const u8, comptime Q: params_query.QueryParameterComponent) !Q.api_type {
+            const fields = std.meta.fields(@TypeOf(self.parameters.path));
+            if (fields.len > 1) {
+                @compileError("This function doesn't work on multiple Path Parameters");
+            }
+
             var parser = self.getQueryParser();
             var ret: Q.api_type = .{};
             var refs_inited: [Q.refs.len]bool = @splat(false);
-            try parser.processParamsForQueryItem(Q, &refs_inited, &ret, key, self.parameters.path.name);
+
+            inline for (fields) |field| {
+                try parser.processParamsForQueryItem(Q, &refs_inited, &ret, key, @field(self.parameters.path, field.name));
+            }
+
             return ret;
         }
 
@@ -144,6 +153,7 @@ pub fn RouteData(comptime R: type) type {
             if (Meta.requirements.tres) self.tres.deinit();
             if (Meta.requirements.qos) self.qos.deinit();
             if (Meta.requirements.db_conn) self.db_conn.close();
+            // TODO: Make sure deinit any lists of queries
         }
 
         pub fn dumpData(self: *const @This(), value: anytype) ![]const u8 {
