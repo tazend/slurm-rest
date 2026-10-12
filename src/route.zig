@@ -20,6 +20,7 @@ pub const route_categories = &.{
     @import("routes/db/users.zig"),
     @import("routes/db/associations.zig"),
     @import("routes/db/qos.zig"),
+    @import("routes/db/wckey.zig"),
     @import("routes/openapi.zig"),
 };
 

@@ -312,10 +312,11 @@ pub const Coordinator = coordinator.Coordinator;
 pub const Coordinators = coordinator.Coordinators;
 pub const CoordinatorsResponse = coordinator.CoordinatorsResponse;
 
-const wckey = @import("openapi/schemas/db/wckey.zig");
+pub const wckey = @import("openapi/schemas/db/wckey.zig");
 pub const WCKey = wckey.WCKey;
 pub const WCKeys = wckey.WCKeys;
 pub const WCKeysResponse = wckey.WCKeysResponse;
+pub const WCKeyResponse = wckey.WCKeyResponse;
 
 pub const assoc = @import("openapi/schemas/association.zig");
 pub const Association = assoc.Association;

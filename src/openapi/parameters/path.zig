@@ -83,6 +83,17 @@ pub const AssociationSingle: Parameters = .{
     },
 };
 
+pub const WCKey: Parameters = .{
+    .api_type = models.IDPathParameter([]const u8),
+    .parameters = &.{
+        .{
+            .name = "id",
+            .description = "ID of the WCKey to operate on",
+            .type = .string,
+        },
+    },
+};
+
 pub const Node = NamePathParameter("Node");
 pub const QoS = NamePathParameter("QoS");
 pub const Partition = NamePathParameter("Partition");

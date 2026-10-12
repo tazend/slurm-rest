@@ -13,6 +13,7 @@ pub const DBStepsResponse =           GenericResponse(openapi.DBSteps);
 pub const CoordinatorsResponse =      GenericResponse(openapi.Coordinators);
 pub const UsersResponse =             GenericResponse(openapi.Users);
 pub const WCKeysResponse =            GenericResponse(openapi.WCKeys);
+pub const WCKeyResponse =             GenericResponse(openapi.WCKey);
 //pub const QueueResponse =             GenericResponse(openapi.Queue);
 pub const JobResponse =               GenericResponse(openapi.Job);
 pub const NodeResponse =              GenericResponse(openapi.Node);
