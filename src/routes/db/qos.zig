@@ -12,6 +12,7 @@ const path_params = @import("../../openapi/parameters/path.zig");
 
 pub const routes = &.{
     @"GET /db/qos",
+    @"GET /db/qos/:name",
 };
 
 pub const @"GET /db/qos" = struct {
@@ -56,6 +57,7 @@ pub const @"GET /db/qos/:name" = struct {
         },
         .parameters = .{
             .path = path_params.QoS,
+            .query = openapi.qos.query.Flags,
         },
         .requirements = .{
             .db_conn = true,
@@ -63,10 +65,18 @@ pub const @"GET /db/qos/:name" = struct {
         }
     };
 
-    pub fn handle(ctx: *const RouteData(@This())) !models.QoSResponse {
-        _ = ctx;
-//      const resp = try slurm.db.qos.load(ctx.db_conn, ctx.parameters.query);
-//      defer resp.deinit();
-//      return .{ .data = try dump(ctx.arena, resp)};
+    pub fn handle(ctx: *const RouteData(@This())) !models.QoSSingleResponse {
+        var filter = try ctx.pathIdToFilter("names", openapi.qos.query.Filter);
+        filter.flags = ctx.parameters.query;
+
+        const resp = try slurm.db.qos.load(ctx.db_conn, filter);
+        defer resp.deinit();
+
+        var iter = resp.iter();
+        defer iter.deinit();
+
+        const qos = iter.next() orelse return .{ .data = "null" };
+
+        return .{ .data = try ctx.dumpData(qos)};
     }
 };
