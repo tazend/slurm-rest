@@ -1,5 +1,6 @@
 const std = @import("std");
 const mem = std.mem;
+const Allocator = mem.Allocator;
 const Stringify = std.json.Stringify;
 const slurm = @import("slurm");
 const httpz = @import("httpz");
@@ -7,19 +8,9 @@ const RequestContext = @import("route.zig").RequestContext;
 const RouteData = @import("route.zig").RouteData;
 pub const ParameterParser = @This();
 
-arena: std.mem.Allocator,
-request: *httpz.Request,
+arena: Allocator,
 qos: ?*slurm.List(*slurm.db.QoS) = null,
 db_conn: ?*slurm.db.Connection = null,
-
-pub fn init(ctx: *RequestContext, qos: ?*slurm.List(*slurm.db.QoS), db_conn: ?*slurm.db.Connection) ParameterParser {
-    return .{
-        .arena = ctx.arena,
-        .request = ctx.req,
-        .db_conn = db_conn,
-        .qos = qos,
-    };
-}
 
 pub const Style = enum {
     simple,
@@ -97,27 +88,34 @@ pub fn initType(comptime T: type, arena: std.mem.Allocator) !T {
     }
 }
 
-pub fn parse(self: *ParameterParser, comptime T: QueryParameterComponent) !T.api_type {
-    var f: T.api_type = .{};
-    var query = try self.request.query();
+pub fn parse(self: *ParameterParser, comptime T: QueryParameterComponent, req: *httpz.Request) !T.api_type {
+    var result: T.api_type = .{};
+    var query = try req.query();
     var query_it = query.iterator();
     var refs_inited: [T.refs.len]bool = @splat(false);
 
     while (query_it.next()) |kv| {
-        try self.processParamsForQueryItem(T, &refs_inited, &f, kv.key, kv.value);
+        try self.processParamsForQueryItem(T, &refs_inited, &result, kv.key, kv.value);
     }
-    return f;
+    return result;
 }
 
-pub fn processParamsForQueryItem(self: *ParameterParser, comptime Q: QueryParameterComponent, refs_inited: *[Q.refs.len]bool, f: *Q.api_type, key: []const u8, value: []const u8) !void {
+pub fn processParamsForQueryItem(
+    self: *ParameterParser,
+    comptime Q: QueryParameterComponent,
+    refs_inited: *[Q.refs.len]bool,
+    result: *Q.api_type,
+    key: []const u8,
+    value: []const u8
+) !void {
     inline for (Q.parameters) |param| {
         if (std.mem.eql(u8, key, param.name)) {
-            try self.parseParam(f, value, param);
+            try self.parseParam(result, value, param);
             return;
         }
     }
     inline for (Q.refs, 0..) |ref, i| {
-        const r = &@field(f, ref.name);
+        const r = &@field(result, ref.name);
         const RefType = @TypeOf(r.*);
 
         if (!refs_inited[i]) {
@@ -163,9 +161,14 @@ fn qosNameToId(qos: *slurm.List(*slurm.db.QoS), name: []const u8) ?u32 {
     } else return null;
 }
 
-pub fn parseParam(self: *ParameterParser, r: anytype, value: []const u8, comptime P: Parameter) anyerror!void {
+pub fn parseParam(
+    self: *ParameterParser,
+    result: anytype,
+    value: []const u8,
+    comptime P: Parameter
+) !void {
     const fname = P.api_name orelse P.name;
-    const field = &@field(r, fname);
+    const field = &@field(result, fname);
 
     const T = @TypeOf(field.*);
     switch (P.parser) {

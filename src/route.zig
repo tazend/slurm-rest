@@ -100,12 +100,12 @@ pub fn RouteData(comptime R: type) type {
             else {};
 
             const query = if (Meta.parameters.query) |q| blk: {
-                var qparser = params_query.init(
-                    ctx,
-                    if (Meta.requirements.qos) qos else null,
-                    if (Meta.requirements.db_conn) db_conn else null,
-                );
-                break :blk try qparser.parse(q);
+                var qparser: params_query.ParameterParser = .{
+                    .arena = ctx.arena,
+                    .qos = if (Meta.requirements.qos) qos else null,
+                    .db_conn = if (Meta.requirements.db_conn) db_conn else null,
+                };
+                break :blk try qparser.parse(q, ctx.req);
             } else {};
 
             return .{
@@ -126,7 +126,6 @@ pub fn RouteData(comptime R: type) type {
         pub fn getQueryParser(self: @This()) params_query.ParameterParser {
             return .{
                 .arena = self.arena,
-                .request = self.req,
                 .qos = if (Meta.requirements.qos) self.qos else null,
                 .db_conn = if (Meta.requirements.db_conn) self.db_conn else null,
             };
@@ -143,9 +142,14 @@ pub fn RouteData(comptime R: type) type {
             var refs_inited: [Q.refs.len]bool = @splat(false);
 
             inline for (fields) |field| {
-                try parser.processParamsForQueryItem(Q, &refs_inited, &ret, key, @field(self.parameters.path, field.name));
+                try parser.processParamsForQueryItem(
+                    Q,
+                    &refs_inited,
+                    &ret,
+                    key,
+                    @field(self.parameters.path, field.name)
+                );
             }
-
             return ret;
         }
 
