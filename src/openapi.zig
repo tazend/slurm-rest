@@ -2,7 +2,7 @@ const std = @import("std");
 pub const SerdeContext = @import("json/SerdeContext.zig");
 const JSONType = SerdeContext.JSONType;
 const slurm = @import("slurm");
-const models = @import("models.zig");
+pub const models = @import("models.zig");
 
 pub const QueryParameterComponent = @import("query_params.zig").QueryParameterComponent;
 
@@ -267,9 +267,9 @@ pub const QoSSingleResponse = qos.SingleResponse;
 
 pub const part = @import("openapi/schemas/partition.zig");
 pub const Partition = part.Partition;
-pub const Partitions = part.Array;
-pub const PartitionsResponse = part.Response;
-pub const PartitionResponse = part.SingleResponse;
+pub const Partitions = part.Partitions;
+pub const PartitionsResponse = part.PartitionsResponse;
+pub const PartitionResponse = part.PartitionResponse;
 
 pub const slurmctld = @import("openapi/schemas/slurmctld.zig");
 pub const ControllerStatistics = slurmctld.ControllerStatistics;

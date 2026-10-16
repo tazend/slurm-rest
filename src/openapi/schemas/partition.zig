@@ -1,26 +1,30 @@
-const std = @import("std");
-const slurm = @import("slurm");
-const openapi = @import("../../openapi.zig");
-const Property = openapi.Property;
-const SchemaComponent = openapi.SchemaComponent;
-const models = @import("../../models.zig");
-
 pub const Partition: SchemaComponent = .{
     .api_type = slurm.Partition,
     .properties = NameMember ++ ReadOnlyMembers ++ UpdatableMembers,
 };
 
-pub const Updatable: SchemaComponent = .{
+pub const PartitionUpdatable: SchemaComponent = .{
     .api_type = slurm.Partition,
     .properties = UpdatableMembers,
 };
 
-pub const UpdatableArray: SchemaComponent = .array(Updatable, .container);
-pub const Array: SchemaComponent = .array(Partition, .load_response);
-pub const SingleResponse = openapi.GenericResponse("Partition", "Partition Information");
+pub const PartitionUpdatableArray: SchemaComponent = .array(
+    PartitionUpdatable,
+    .container,
+);
 
-pub const Response: SchemaComponent = .{
-    .child = Array,
+pub const Partitions: SchemaComponent = .array(
+    Partition,
+    .load_response,
+);
+
+pub const PartitionResponse = openapi.GenericResponse(
+    "Partition",
+    "Partition Information",
+);
+
+pub const PartitionsResponse: SchemaComponent = .{
+    .child = Partitions,
     .api_type = models.PartitionsResponse,
     .properties = &.{
         .{
@@ -31,7 +35,7 @@ pub const Response: SchemaComponent = .{
         .{
             .name = "partitions",
             .description = "List of Partitions",
-            .ref = Array,
+            .ref = Partitions,
             .serde = .string(.print),
         },
         .{
@@ -81,6 +85,11 @@ const ReadOnlyMembers: []const Property = &.{
         .name = "total_cpus",
         .description = "Total amount of CPUs available",
         .serde = .integer(.native_zero_is_noval),
+    },
+    .{
+        .name = "nodesets",
+        .description = "Nodesets configured for this Partition",
+        .serde = .string(.native),
     },
 };
 
@@ -151,6 +160,11 @@ const UpdatableMembers: []const Property = &.{
         .serde = .array(.bitflag),
     },
     .{
+        .name = "grace_time",
+        .description = "Grace time in seconds by which a job gets extended after being selected for preemption",
+        .serde = .integer(.native),
+    },
+    .{
         .api_name = "job_defaults_str",
         .name = "job_defaults",
         .description = "Job defaults",
@@ -177,6 +191,12 @@ const UpdatableMembers: []const Property = &.{
         .serde = .object(.number),
     },
     .{
+        .api_name = "max_share",
+        .name = "max_shares",
+        .description = "Whether a partition can execute more than one job on a resource",
+        .serde = .integer(.native),
+    },
+    .{
         .name = "max_time",
         .description = "Maximum Time Limit",
         .serde = .object(.number),
@@ -189,11 +209,6 @@ const UpdatableMembers: []const Property = &.{
     .{
         .name = "nodes",
         .description = "Nodes configured in this Partition",
-        .serde = .string(.native),
-    },
-    .{
-        .name = "nodesets",
-        .description = "Nodesets configured for this Partition",
         .serde = .string(.native),
     },
     .{
@@ -228,11 +243,9 @@ const UpdatableMembers: []const Property = &.{
         .serde = .object(.number),
     },
     .{
-        // TODO: This is an enum
         .name = "state",
         .description = "Partition State",
         .serde = .string(.@"enum"),
-//            .ref = slurm.Partition.State,
     },
     .{
         .name = "suspend_time",
@@ -250,3 +263,9 @@ const UpdatableMembers: []const Property = &.{
         .serde = .string(.native),
     },
 };
+
+const slurm = @import("slurm");
+const openapi = @import("../../openapi.zig");
+const Property = openapi.Property;
+const SchemaComponent = openapi.SchemaComponent;
+const models = openapi.models;

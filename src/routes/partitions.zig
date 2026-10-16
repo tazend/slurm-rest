@@ -78,7 +78,7 @@ pub const @"POST /partitions/:name" = struct {
             .ref = openapi.BaseResponse,
             .description = "TODO",
         },
-        .requestBody = openapi.part.Updatable,
+        .requestBody = openapi.part.PartitionUpdatable,
         .parameters = .{
             .path = path_params.Partition,
         },
