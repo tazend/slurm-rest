@@ -75,11 +75,16 @@ pub fn RouteData(comptime R: type) type {
     return struct {
         pub const Meta: RouteMeta = R.Meta;
 
+        const body_type = if (Meta.requestBody) |b| blk: {
+            if (@hasDecl(b.api_type, "ItemType")) break :blk *b.api_type;
+            break :blk b.api_type;
+        } else void;
+
         parameters: struct {
             path: if (Meta.parameters.path) |p| p.api_type else void,
             query: if (Meta.parameters.query) |q| q.api_type else void,
         },
-        body: if (Meta.requestBody) |b| b.api_type else void,
+        body: body_type,
         req: *httpz.Request,
         res: *httpz.Response,
         arena: std.mem.Allocator,

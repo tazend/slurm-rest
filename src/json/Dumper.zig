@@ -356,21 +356,6 @@ pub fn numberRaw(self: *Dumper, data: anytype, opts: NumberOptions) !void {
     }
 }
 
-pub fn getSchema(comptime T: type) SchemaComponent {
-    const decls = @typeInfo(openapi).@"struct".decls;
-    const Child = comptime baseType(T);
-
-    for (decls) |decl| {
-        const field = @field(openapi, decl.name);
-        if (@TypeOf(field) == SchemaComponent) {
-            if (field.api_type == Child) {
-                return field;
-            }
-        }
-    }
-    @compileError("No implementation found for " ++ @typeName(T));
-}
-
 pub fn baseType(comptime T: type) type {
     return switch (@typeInfo(T)) {
         .optional, .pointer => blk: {

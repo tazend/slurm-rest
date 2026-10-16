@@ -15,50 +15,46 @@ slurm_arena: std.heap.ArenaAllocator,
 
 const TokenType = @typeInfo(Token).@"union".tag_type.?;
 
-pub fn parse(comptime S: openapi.SchemaComponent, allocator: Allocator, text: []const u8) !S.api_type {
+pub fn parse(comptime S: openapi.SchemaComponent, allocator: Allocator, text: []const u8) !getApiType(S) {
     var parser: Parser = .{
         .allocator = allocator,
         .source = std.json.Scanner.initCompleteInput(allocator, text),
         .slurm_arena = .init(slurm.slurm_allocator),
     };
-    return parser.parseWithSchema(S);
+    return parser.parseSchema(S);
 }
 
-fn parseWithSchema(self: *Parser, comptime S: openapi.SchemaComponent) !S.api_type {
-    var ret: S.api_type = .{};
-    try self.parseSchema(&ret, S);
-    return ret;
+// TODO: Remove this function again, just a hack for now
+fn getApiType(comptime S: openapi.SchemaComponent) type {
+    if (@hasDecl(S.api_type, "ItemType")) return *S.api_type;
+    return S.api_type;
 }
 
-pub fn parseSchema(self: *Parser, r: anytype, comptime S: openapi.SchemaComponent) anyerror!void {
+pub fn parseSchema(self: *Parser, comptime S: openapi.SchemaComponent) !getApiType(S) {
     switch (S.serde.sx) {
         .object => |o| switch (o) {
-            .container => try self.container(r, S),
+            .container => return try self.container(S),
             else => @compileError("unsupported"),
         },
         .array => |a| switch (a) {
-            .list => r.* = try self.arrayContainerToList(S),
-            .assocs_short => r.* = try self.assocsShort(),
+            .list => return try self.arrayContainerToList(S),
+            .assocs_short => return try self.assocsShort(),
             else => @compileError("Unsupported Array Schema " ++ @typeName(S.api_type)),
         },
         else => {},
     }
 }
 
-pub fn parseProperty(self: *Parser, r: anytype, comptime P: openapi.Property) anyerror!void {
-    const fname = P.api_name orelse P.name;
-    const field = &@field(r, fname);
-    const T = @TypeOf(field.*);
-
+pub fn parseProperty(self: *Parser, comptime P: openapi.Property, comptime T: type) !T {
     if (P.ref) |ref| {
-        return self.parseSchema(field, ref);
+        return self.parseSchema(ref);
     }
 
     switch (P.serde.sx) {
         .object => |o| switch (o) {
             .number, .number_zero_is_noval => {
-                const num = try self.parseWithSchema(openapi.Number(T));
-                field.* = if (num.infinite) |_|
+                const num = try self.parseSchema(openapi.Number(T));
+                return if (num.infinite) |_|
                     @field(slurm.common.Infinite, @typeName(T))
                 else if (num.value) |v|
                     v
@@ -69,35 +65,37 @@ pub fn parseProperty(self: *Parser, r: anytype, comptime P: openapi.Property) an
         },
         .@"null" => {},
         .array => |a| switch (a) {
-            .csv => field.* = try self.arrayStrings(),
+            .csv => return try self.arrayStrings(),
             .nested_bitflag, .bitflag => {
                 const value = try self.innerParse([]const []const u8);
-                field.* = .fromSlice(value);
+                return .fromSlice(value);
             },
-            else => @compileError("array " ++ @tagName(a) ++ " not yet supported for " ++ @typeName(@TypeOf(r)) ++ " on field " ++ fname),
+            else => @compileError("array " ++ @tagName(a) ++ " not yet supported for " ++ @typeName(T) ++ " on field " ++ P.api_name),
         },
         .boolean => |b| switch (b) {
             .int => {
                 const val = try self.innerParse(bool);
-                field.* = if (val) 1 else 0;
+                return if (val) 1 else 0;
             },
-            .native => field.* = try self.innerParse(bool),
+            .native => return try self.innerParse(bool),
         },
         .dict => |d| switch (d) {
-            .key_value => field.* = try self.dict(),
+            .key_value => return try self.dict(),
             else => @compileError("dict not yet supported"),
         },
         .integer => |i| switch (i) {
             .signal => @compileError("TODO"),
-            inline else => field.* = try self.innerParse(T),
+            inline else => return try self.innerParse(T),
         },
         .number => |_| @compileError("number is not supported"),
         .string => |s| switch (s) {
             .user_name => @compileError("TODO"),
-            .@"enum" => field.* = try self.innerParse(T),
-            inline else => field.* = try self.innerParse([:0]const u8),
+            .@"enum" => return try self.innerParse(T),
+            inline else => return try self.innerParse([:0]const u8),
         },
     }
+
+    @compileError("Invalid Parser type");
 }
 
 pub fn dict(self: *Parser) ![:0]const u8 {
@@ -151,7 +149,7 @@ pub fn assocsShort(self: *Parser) !*slurm.db.List(*slurm.db.Association) {
         const T = baseType(@TypeOf(list)).ItemType;
         const TBase = baseType(T);
         const item: T = try self.slurm_arena.allocator().create(TBase);
-        const assoc_short = try self.parseWithSchema(openapi.AssociationShort);
+        const assoc_short = try self.parseSchema(openapi.AssociationShort);
         item.* = .{};
         item.acct = assoc_short.account;
         item.cluster = assoc_short.cluster;
@@ -174,8 +172,7 @@ pub fn arrayContainerToList(self: *Parser, comptime S: openapi.SchemaComponent) 
         const T = baseType(@TypeOf(list)).ItemType;
         const TBase = baseType(T);
         const item: T = try self.slurm_arena.allocator().create(TBase);
-        const schema = Dumper.getSchema(T);
-        item.* = try self.parseWithSchema(schema);
+        item.* = try self.parseSchema(S.getChild());
         list.append(item);
 
         if (.array_end == try self.source.peekNextTokenType()) break;
@@ -212,9 +209,10 @@ fn expectNextToken(self: *Parser, token: TokenType) !void {
     if (token != try self.source.next()) return error.UnexpectedToken;
 }
 
-pub fn container(self: *Parser, r: anytype, comptime S: openapi.SchemaComponent) anyerror!void {
+pub fn container(self: *Parser, comptime S: openapi.SchemaComponent) !S.api_type {
     var fields_seen: [S.properties.len]bool = @splat(false);
 
+    var result: S.api_type = .{};
     try self.expectNextToken(.object_begin);
     while (true) {
         const field_name = try self.nextFieldName() orelse break;
@@ -223,7 +221,11 @@ pub fn container(self: *Parser, r: anytype, comptime S: openapi.SchemaComponent)
                 if (fields_seen[i]) {
                     return error.DuplicateField;
                 }
-                try self.parseProperty(r, prop);
+                const api_name = prop.api_name orelse prop.name;
+                const field = @field(result, api_name);
+                const T = @TypeOf(field);
+
+                @field(result, api_name) = try self.parseProperty(prop, T);
                 fields_seen[i] = true;
                 break;
             }
@@ -233,6 +235,7 @@ pub fn container(self: *Parser, r: anytype, comptime S: openapi.SchemaComponent)
         }
     }
 
+    return result;
 //    try fillDefaultStructValues(S.api_type, r, &fields_seen);
     //std.debug.print("token is {}\n", .{try self.source.peekNextTokenType()});
 //  if (.object_end != try parser.source.next()) return error.UnexpectedToken;
