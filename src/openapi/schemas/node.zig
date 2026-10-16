@@ -67,6 +67,42 @@ pub const NodeUpdatable: SchemaComponent = .{
     },
 };
 
+pub const NodeUpdatableSingle: SchemaComponent = .{
+    .api_type = slurm.Node.Updatable,
+    .properties = SharedMembers ++ &[_]Property{
+        .{
+            .name = "cert_token",
+            .description = "Cert Token",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "instance_id",
+            .description = "List of Instance Ids",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "instance_type",
+            .description = "List of Instance Types",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "address",
+            .description = "List of Node addresses",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "hostname",
+            .description = "List of Node Hostnames",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "resume_after",
+            .description = "Resume after this amount of seconds",
+            .serde = .integer(.native),
+        },
+    },
+};
+
 pub const AccountingGatherEnergy: SchemaComponent = .{
     .api_type = slurm.AccountingGatherEnergy,
     .properties = &.{
@@ -147,7 +183,7 @@ pub const Node: SchemaComponent = .{
         .{
             .name = "cert_flags",
             .description = "Certificate flags",
-            .serde = .array(.native),
+            .serde = .array(.bitflag),
         },
         .{
             .name = "cert_last_renewal",
@@ -170,11 +206,6 @@ pub const Node: SchemaComponent = .{
             .description = "Number of CPUs reserved for the System",
             .serde = .integer(.native),
         },
-//      .{
-//          .name = "cpu_bind",
-//          .description = "Default CPU Binding",
-//          .serde = .array(.native),
-//      },
         .{
             .name = "cpu_load",
             .description = "Current CPU Load",

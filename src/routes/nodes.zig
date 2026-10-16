@@ -15,6 +15,7 @@ pub const routes = &.{
     @"GET /nodes",
     @"GET /nodes/:name",
     @"POST /nodes",
+    @"POST /nodes/:name",
     @"DELETE /nodes/:name",
 };
 
@@ -85,6 +86,36 @@ pub const @"POST /nodes" = struct {
         const data = try dump(ctx.arena, ctx.body, openapi.NodeUpdatable);
         std.debug.print("{s}\n", .{data});
         //try slurm.node.update(ctx.body);
+        return .{};
+    }
+};
+
+pub const @"POST /nodes/:name" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "Nodes",
+        },
+        .summary = "Update one Nodes",
+        .description = "Update one Nodes",
+        .operationId = "updateNode",
+        .response = .{
+            .ref = openapi.BaseResponse,
+            .description = "TODO",
+        },
+        .parameters = .{
+            .path = path_params.Node
+        },
+        .requestBody = openapi.node.NodeUpdatableSingle,
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
+        var body = ctx.body;
+        body.names = ctx.parameters.path.name;
+
+        const data = try dump(ctx.arena, body, openapi.node.NodeUpdatableSingle);
+        std.debug.print("{s}\n", .{data});
+        std.debug.print("state: {any}\n", .{body.state});
+        try slurm.node.update(body);
         return .{};
     }
 };
