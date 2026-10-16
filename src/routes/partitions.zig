@@ -15,6 +15,7 @@ pub const routes = &.{
     @"GET /partitions",
     @"GET /partitions/:name",
     @"POST /partitions/:name",
+    @"POST /partitions",
 };
 
 pub const @"GET /partitions" = struct {
@@ -90,6 +91,29 @@ pub const @"POST /partitions/:name" = struct {
         const data = try dump(ctx.arena, part, openapi.Partition);
         std.debug.print("{s}\n", .{data});
         try slurm.partition.update(part);
+        return .{};
+    }
+};
+
+pub const @"POST /partitions" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "Partitions",
+        },
+        .summary = "Update Partitions",
+        .description = "Update a list Partition",
+        .operationId = "updatePartitions",
+        .response = .{
+            .ref = openapi.BaseResponse,
+            .description = "TODO",
+        },
+        .requestBody = openapi.part.PartitionUpdatableArray,
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
+        for (ctx.body.items) |item| {
+            std.debug.print("allow_accounts: {?s}\n", .{item.allow_accounts});
+        }
         return .{};
     }
 };
