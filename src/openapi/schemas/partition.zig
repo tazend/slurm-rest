@@ -8,10 +8,12 @@ pub const PartitionUpdatable: SchemaComponent = .{
     .properties = UpdatableMembers,
 };
 
-pub const PartitionUpdatableArray: SchemaComponent = .array(
-    PartitionUpdatable,
-    .container,
-);
+pub const PartitionUpdatableArray: SchemaComponent = .{
+    .api_type = std.ArrayList(*slurm.Partition),
+    .properties = PartitionUpdatable.properties ++ NameMember,
+    .serde = .array(.container),
+    .child = PartitionUpdatable,
+};
 
 pub const Partitions: SchemaComponent = .array(
     Partition,
@@ -264,6 +266,7 @@ const UpdatableMembers: []const Property = &.{
     },
 };
 
+const std = @import("std");
 const slurm = @import("slurm");
 const openapi = @import("../../openapi.zig");
 const Property = openapi.Property;
