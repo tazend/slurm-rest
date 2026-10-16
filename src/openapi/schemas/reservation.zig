@@ -24,18 +24,11 @@ pub const ReservationUpdatable: SchemaComponent = .{
 };
 
 pub const ReservationUpdatableArray: SchemaComponent = .{
-    .api_type = []const slurm.Reservation.Updatable,
-    .ignored_fields = &.{
-        "job_ptr",
-    },
-    .properties = NameMember ++ UpdatableMembers ++ &[_]Property{
-        .{
-            .name = "duration",
-            .description = "Duration of the Reservation",
-            .serde = .object(.number),
-        },
-    },
+    .api_type = std.ArrayList(*slurm.Reservation.Updatable),
+    .ignored_fields = ReservationUpdatable.ignored_fields,
+    .properties = ReservationUpdatable.properties ++ NameMember,
     .serde = .array(.container),
+    .child = ReservationUpdatable,
 };
 
 pub const Reservation: SchemaComponent = .{
