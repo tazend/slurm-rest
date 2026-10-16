@@ -39,6 +39,21 @@ pub fn parseSchema(self: *Parser, comptime S: openapi.SchemaComponent) !getApiTy
         .array => |a| switch (a) {
             .list => return try self.arrayContainerToList(S),
             .assocs_short => return try self.assocsShort(),
+            .container => {
+                try self.expectNextToken(.array_begin);
+
+                var list: S.api_type = .empty;
+                while (true) {
+                    const Child = S.getChild();
+                    const item = try self.allocator.create(Child.api_type);
+                    item.* = try self.parseSchema(Child);
+                    try list.append(self.allocator, item);
+
+                    if (.array_end == try self.source.peekNextTokenType()) break;
+                }
+                try self.expectNextToken(.array_end);
+                return list;
+            },
             else => @compileError("Unsupported Array Schema " ++ @typeName(S.api_type)),
         },
         else => {},
