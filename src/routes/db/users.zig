@@ -11,6 +11,7 @@ const dump = @import("../../json/Dumper.zig").dump;
 pub const routes = &.{
     @"GET /db/users",
     @"GET /db/users/:name",
+    @"POST /db/users",
 };
 
 pub const @"GET /db/users" = struct {
@@ -76,5 +77,35 @@ pub const @"GET /db/users/:name" = struct {
         const user = iter.next() orelse return .{ .data = "null" };
 
         return .{ .data = try ctx.dumpData(user)};
+    }
+};
+
+pub const @"POST /db/users" = struct {
+    pub const Meta: RouteMeta = .{
+        .tags = &.{
+            "Users",
+        },
+        .summary = "Modify Database Users",
+        .description = "Modify a set of Users in the Database",
+        .operationId = "modifyUsers",
+        .response = .{
+            .ref = openapi.BaseResponse,
+            .description = "TODO",
+        },
+        .requestBody = openapi.user.UsersUpdatable,
+        .requirements = .{
+            .db_conn = true,
+        }
+    };
+
+    pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
+        var it = ctx.body.iter();
+        defer it.deinit();
+        while (it.next()) |item| {
+            std.debug.print("defacct: {?s}\n", .{item.default_acct});
+            std.debug.print("name: {?s}\n", .{item.name});
+            std.debug.print("admin_level: {s}\n", .{@tagName(item.admin_level)});
+        }
+        return .{};
     }
 };

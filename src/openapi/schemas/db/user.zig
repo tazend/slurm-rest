@@ -6,8 +6,31 @@ const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
 pub const Users: SchemaComponent = .array(User, .list);
+pub const UsersUpdatable: SchemaComponent = .array(UserUpdatable, .list);
 pub const UsersResponse = openapi.GenericResponse("Users", "List of Database Users");
 pub const UserResponse = openapi.GenericResponse("User", "Database User Information");
+
+pub const UserUpdatable: SchemaComponent = .{
+    .api_type = slurm.db.User,
+    .properties = &.{
+        .{
+            .api_name = "default_acct",
+            .name = "default_account",
+            .description = "Default Account",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "name",
+            .description = "Name of the User",
+            .serde = .string(.native),
+        },
+        .{
+            .name = "admin_level",
+            .description = "Admin Level of the User",
+            .serde = .string(.@"enum"),
+        },
+    },
+};
 
 pub const User: SchemaComponent = .{
     .api_type = slurm.db.User,
