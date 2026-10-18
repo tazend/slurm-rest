@@ -267,3 +267,7 @@ pub const query = struct {
         },
     };
 };
+
+pub const path = struct {
+    pub const NameParameter: openapi.PathParameterComponent = .name("QoS");
+};

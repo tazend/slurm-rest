@@ -4,7 +4,7 @@ const httpz = @import("httpz");
 const Handler = @import("main.zig").Handler;
 const Dumper = @import("json/Dumper.zig");
 const openapi = @import("openapi.zig");
-const params_path = @import("openapi/parameters/path.zig");
+const PathParameters = @import("parameters/PathParameters.zig");
 const QueryParametes = @import("parameters/QueryParametes.zig");
 const Parser = @import("json/Parser.zig");
 
@@ -116,7 +116,7 @@ pub fn RouteData(comptime R: type) type {
 
             return .{
                 .parameters = .{
-                    .path = if (Meta.parameters.path) |p| try p.init(ctx) else {},
+                    .path = if (Meta.parameters.path) |p| try PathParameters.parse(p, ctx) else {},
                     .query = query,
                 },
                 .body = if (Meta.requestBody) |b| try Parser.parse(b, ctx.arena, ctx.req.body() orelse return error.EmptyBody),
@@ -248,7 +248,7 @@ pub const RouteMeta = struct {
     };
 
     pub const Parameters = struct {
-        path: ?params_path.Parameters = null,
+        path: ?openapi.PathParameterComponent = null,
         query: ?openapi.QueryParameterComponent = null,
     };
 };

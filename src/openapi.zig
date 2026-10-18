@@ -1,7 +1,7 @@
 const std = @import("std");
-pub const SerdeContext = @import("json/SerdeContext.zig");
-const JSONType = SerdeContext.JSONType;
 const slurm = @import("slurm");
+pub const SerdeContext = @import("json/SerdeContext.zig");
+pub const JSONType = SerdeContext.JSONType;
 pub const models = @import("models.zig");
 
 /// A specific Member or "Property" of a Schema Component
@@ -113,6 +113,58 @@ pub const QueryParameterComponent = struct {
         }
     };
 };
+
+pub const PathParameterComponent = struct {
+    api_type: type,
+    parameters: []const Parameter,
+
+    pub fn name(comptime entity: []const u8) PathParameterComponent {
+        return .{
+            .api_type = models.NamePathParameter,
+            .parameters = &.{
+                .{
+                    .name = "name",
+                    .description = "Name of the " ++ entity,
+                    .type = .string,
+                },
+            },
+        };
+    }
+
+    pub const Parameter = struct {
+        name: []const u8,
+        description: []const u8,
+        required: bool = true,
+        style: ParameterStyle = .simple,
+        explode: bool = false,
+        @"type": JSONType,
+
+        pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
+            try jw.beginObject();
+
+            try jw.objectField("in");
+            try jw.write("path");
+            try jw.objectField("name");
+            try jw.write(self.name);
+            try jw.objectField("description");
+            try jw.write(self.description);
+            try jw.objectField("required");
+            try jw.write(self.required);
+            try jw.objectField("style");
+            try jw.write(self.style);
+            try jw.objectField("explode");
+            try jw.write(self.explode);
+
+            try jw.objectField("schema");
+            try jw.beginObject();
+            try jw.objectField("type");
+            try jw.write(self.@"type");
+            try jw.endObject();
+            try jw.endObject();
+        }
+    };
+};
+
 
 pub fn GenericResponse(comptime name: [:0]const u8, comptime what: []const u8) SchemaComponent {
     if (!@hasDecl(@This(), name)) {
@@ -334,21 +386,21 @@ pub const slurmctld = @import("openapi/schemas/slurmctld.zig");
 pub const ControllerStatistics = slurmctld.ControllerStatistics;
 pub const ControllerStatisticsResponse = slurmctld.ControllerStatisticsResponse;
 
-const node = @import("openapi/schemas/node.zig");
+pub const node = @import("openapi/schemas/node.zig");
 pub const Node = node.Node;
 pub const Nodes = node.Nodes;
 pub const NodesResponse = node.NodesResponse;
 pub const NodeResponse = node.NodeResponse;
 pub const NodeUpdatable = node.NodeUpdatable;
 
-const job = @import("openapi/schemas/job.zig");
+pub const job = @import("openapi/schemas/job.zig");
 pub const Job = job.Job;
 pub const Jobs = job.Jobs;
 pub const JobsResponse = job.JobsResponse;
 pub const JobResponse = job.JobResponse;
 pub const JobScriptResponse = job.JobScriptResponse;
 
-const step = @import("openapi/schemas/step.zig");
+pub const step = @import("openapi/schemas/step.zig");
 pub const Step = step.Step;
 pub const Steps = step.Steps;
 pub const StepsResponse = step.StepsResponse;
@@ -366,7 +418,7 @@ pub const Users = user.Users;
 pub const UsersResponse = user.UsersResponse;
 pub const UserResponse = user.UserResponse;
 
-const coordinator = @import("openapi/schemas/db/coordinator.zig");
+pub const coordinator = @import("openapi/schemas/db/coordinator.zig");
 pub const Coordinator = coordinator.Coordinator;
 pub const Coordinators = coordinator.Coordinators;
 pub const CoordinatorsResponse = coordinator.CoordinatorsResponse;

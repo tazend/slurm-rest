@@ -9,8 +9,6 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
-const JobsParameters = @import("../openapi/parameters/path.zig").JobIDPathParameter;
-
 pub const routes = &.{
     @"GET /jobs",
     @"GET /jobs/:id",
@@ -57,7 +55,7 @@ pub const @"GET /jobs/:id" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = JobsParameters,
+            .path = openapi.job.path.IDParameter,
         },
     };
 
@@ -81,7 +79,7 @@ pub const @"GET /jobs/:id/steps" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = JobsParameters,
+            .path = openapi.job.path.IDParameter,
         },
     };
 
@@ -108,7 +106,7 @@ pub const @"GET /jobs/:id/script" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = JobsParameters,
+            .path = openapi.job.path.IDParameter,
         },
     };
 
@@ -131,7 +129,7 @@ pub const @"DELETE /jobs/:id" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = JobsParameters,
+            .path = openapi.job.path.IDParameter,
         },
     };
 

@@ -266,6 +266,10 @@ const UpdatableMembers: []const Property = &.{
     },
 };
 
+pub const path = struct {
+    pub const NameParameter: openapi.PathParameterComponent = .name("Partition");
+};
+
 const std = @import("std");
 const slurm = @import("slurm");
 const openapi = @import("../../openapi.zig");

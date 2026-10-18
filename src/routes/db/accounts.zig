@@ -9,8 +9,6 @@ const RouteData = route.RouteData;
 const SlurmRequirements = route.SlurmRequirements;
 const dump = @import("../../json/Dumper.zig").dump;
 
-const path_params = @import("../../openapi/parameters/path.zig");
-
 pub const routes = &.{
     @"GET /db/accounts",
     @"GET /db/accounts/:name",
@@ -70,7 +68,7 @@ pub const @"GET /db/accounts/:name" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = path_params.AccountParameter,
+            .path = openapi.account.path.NameParameter,
             .query = openapi.account.query.FilterSingle,
         },
         .requirements = .{
@@ -108,7 +106,7 @@ pub const @"POST /db/accounts/:name" = struct {
         },
         .requestBody = openapi.account.AccountUpdatable,
         .parameters = .{
-            .path = path_params.AccountParameter,
+            .path = openapi.account.path.NameParameter,
         },
         .requirements = .{
             .db_conn = true,
@@ -141,7 +139,7 @@ pub const @"DELETE /db/accounts/:name" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = path_params.AccountParameter,
+            .path = openapi.account.path.NameParameter,
         },
         .requirements = .{
             .db_conn = true,

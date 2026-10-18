@@ -1,6 +1,6 @@
 const slurm = @import("slurm");
 const openapi = @import("../../../openapi.zig");
-const models = @import("../../../models.zig");
+const models = openapi.models;
 const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
@@ -125,5 +125,18 @@ pub const query = struct {
     //          .parse = TODO,
     //      },
         } ++ FlagsParameters,
+    };
+};
+
+pub const path = struct {
+    pub const IDParameter: openapi.PathParameterComponent = .{
+        .api_type = models.IDPathParameter([]const u8),
+        .parameters = &.{
+            .{
+                .name = "id",
+                .description = "ID of the WCKey to operate on",
+                .type = .string,
+            },
+        },
     };
 };

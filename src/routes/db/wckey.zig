@@ -8,8 +8,6 @@ const RouteMeta = route.RouteMeta;
 const RouteData = route.RouteData;
 const dump = @import("../../json/Dumper.zig").dump;
 
-const path_params = @import("../../openapi/parameters/path.zig");
-
 pub const routes = &.{
     @"GET /db/wckeys",
     @"GET /db/wckeys/:id",
@@ -56,7 +54,7 @@ pub const @"GET /db/wckeys/:id" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = path_params.WCKey,
+            .path = openapi.wckey.path.IDParameter,
             .query = openapi.wckey.query.FilterSingle,
         },
         .requirements = .{

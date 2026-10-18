@@ -9,8 +9,6 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
-const path_params = @import("../openapi/parameters/path.zig");
-
 pub const routes = &.{
     @"GET /partitions",
     @"GET /partitions/:name",
@@ -55,7 +53,7 @@ pub const @"GET /partitions/:name" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = path_params.Partition,
+            .path = openapi.part.path.NameParameter,
         },
     };
 
@@ -81,7 +79,7 @@ pub const @"POST /partitions/:name" = struct {
         },
         .requestBody = openapi.part.PartitionUpdatable,
         .parameters = .{
-            .path = path_params.Partition,
+            .path = openapi.part.path.NameParameter,
         },
     };
 

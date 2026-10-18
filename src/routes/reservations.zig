@@ -9,8 +9,6 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
-const path_params = @import("../openapi/parameters/path.zig");
-
 pub const routes = &.{
     @"GET /reservations",
     @"GET /reservations/:name",
@@ -57,7 +55,7 @@ pub const @"GET /reservations/:name" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = path_params.Reservation,
+            .path = openapi.reservation.path.NameParameter,
         },
     };
 
@@ -82,7 +80,7 @@ pub const @"DELETE /reservations/:name" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = path_params.Reservation,
+            .path = openapi.reservation.path.NameParameter,
         },
     };
 
@@ -106,7 +104,7 @@ pub const @"POST /reservations/:name" = struct {
         },
         .requestBody = openapi.reservation.ReservationUpdatable,
         .parameters = .{
-            .path = path_params.Reservation,
+            .path = openapi.reservation.path.NameParameter,
         },
     };
 
@@ -157,7 +155,7 @@ pub const @"PUT /reservations/:name" = struct {
         },
         .requestBody = openapi.reservation.ReservationUpdatable,
         .parameters = .{
-            .path = path_params.Reservation,
+            .path = openapi.reservation.path.NameParameter,
         },
     };
 

@@ -9,8 +9,6 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
-const path_params = @import("../openapi/parameters/path.zig");
-
 pub const routes = &.{
     @"GET /nodes",
     @"GET /nodes/:name",
@@ -56,7 +54,7 @@ pub const @"GET /nodes/:name" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = path_params.Node,
+            .path = openapi.node.path.NameParameter,
         },
     };
 
@@ -103,7 +101,7 @@ pub const @"POST /nodes/:name" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = path_params.Node
+            .path = openapi.node.path.NameParameter,
         },
         .requestBody = openapi.node.NodeUpdatableSingle,
     };
@@ -133,7 +131,7 @@ pub const @"DELETE /nodes/:name" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = path_params.Node,
+            .path = openapi.node.path.NameParameter,
         },
     };
 

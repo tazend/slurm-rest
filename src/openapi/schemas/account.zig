@@ -3,6 +3,7 @@ const slurm = @import("slurm");
 const openapi = @import("../../openapi.zig");
 const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
+const models = openapi.models;
 
 const AccountUpdatableProperties: []const Property = &.{
     .{
@@ -133,4 +134,8 @@ pub const query = struct {
         },
     };
 
+};
+
+pub const path = struct {
+    pub const NameParameter: openapi.PathParameterComponent = .name("Account");
 };

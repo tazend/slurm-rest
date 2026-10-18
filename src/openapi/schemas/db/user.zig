@@ -1,7 +1,7 @@
 const std = @import("std");
 const slurm = @import("slurm");
 const openapi = @import("../../../openapi.zig");
-const models = @import("../../../models.zig");
+const models = openapi.models;
 const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
@@ -161,4 +161,8 @@ pub const query = struct {
         } ++ FlagsParameters,
     };
 
+};
+
+pub const path = struct {
+    pub const NameParameter: openapi.PathParameterComponent = .name("User");
 };

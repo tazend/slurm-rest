@@ -8,8 +8,6 @@ const RouteMeta = route.RouteMeta;
 const RouteData = route.RouteData;
 const dump = @import("../../json/Dumper.zig").dump;
 
-const path_params = @import("../../openapi/parameters/path.zig");
-
 pub const routes = &.{
     @"GET /db/qos",
     @"GET /db/qos/:name",
@@ -56,7 +54,7 @@ pub const @"GET /db/qos/:name" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = path_params.QoS,
+            .path = openapi.qos.path.NameParameter,
             .query = openapi.qos.query.Flags,
         },
         .requirements = .{

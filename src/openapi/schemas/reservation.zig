@@ -192,3 +192,7 @@ const UpdatableMembers: []const Property = &.{
         .serde = .integer(.native),
     },
 };
+
+pub const path = struct {
+    pub const NameParameter: openapi.PathParameterComponent = .name("Reservation");
+};

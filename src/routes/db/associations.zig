@@ -8,8 +8,6 @@ const RouteMeta = route.RouteMeta;
 const RouteData = route.RouteData;
 const dump = @import("../../json/Dumper.zig").dump;
 
-const path_params = @import("../../openapi/parameters/path.zig");
-
 pub const routes = &.{
     @"GET /db/associations",
     @"GET /db/associations/:id",
@@ -56,7 +54,7 @@ pub const @"GET /db/associations/:id" = struct {
         },
         .parameters = .{
             .query = openapi.assoc.query.FilterSingle,
-            .path = path_params.AssociationSingle,
+            .path = openapi.assoc.path.IDParameter,
         },
         .requirements = .{
             .db_conn = true,

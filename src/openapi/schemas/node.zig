@@ -3,7 +3,7 @@ const slurm = @import("slurm");
 const openapi = @import("../../openapi.zig");
 const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
-const models = @import("../../models.zig");
+const models = openapi.models;
 
 pub const Nodes:             SchemaComponent = .array(Node, .load_response);
 pub const NodeResponse =         openapi.GenericResponse("Node", "Node information");
@@ -487,4 +487,8 @@ const SharedMembers: []const Property = &.{
         .description = "Node weight",
         .serde = .integer(.native),
     },
+};
+
+pub const path = struct {
+    pub const NameParameter: openapi.PathParameterComponent = .name("Node");
 };

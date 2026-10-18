@@ -3,7 +3,7 @@ const slurm = @import("slurm");
 const openapi = @import("../../openapi.zig");
 const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
-const models = @import("../../models.zig");
+const models = openapi.models;
 
 pub const Jobs: SchemaComponent = .array(Job, .load_response);
 pub const JobResponse = openapi.GenericResponse("Job", "Job information");
@@ -913,3 +913,15 @@ pub const Job: SchemaComponent = .{
     },
 };
 
+pub const path = struct {
+    pub const IDParameter: openapi.PathParameterComponent = .{
+        .api_type = models.JobIDPathParameter,
+        .parameters = &.{
+            .{
+                .name = "id",
+                .description = "ID of the Job to operate on",
+                .type = .integer,
+            },
+        },
+    };
+};

@@ -8,8 +8,6 @@ const RouteMeta = route.RouteMeta;
 const RouteData = route.RouteData;
 const dump = @import("../../json/Dumper.zig").dump;
 
-const path_params = @import("../../openapi/parameters/path.zig");
-
 pub const routes = &.{
     @"GET /db/users",
     @"GET /db/users/:name",
@@ -56,7 +54,7 @@ pub const @"GET /db/users/:name" = struct {
         },
         .parameters = .{
             .query = openapi.user.query.FilterSingle,
-            .path = path_params.User,
+            .path = openapi.user.path.NameParameter,
         },
         .requirements = .{
             .db_conn = true,
