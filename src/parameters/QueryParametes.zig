@@ -1,94 +1,23 @@
 const std = @import("std");
 const mem = std.mem;
 const Allocator = mem.Allocator;
-const Stringify = std.json.Stringify;
 const slurm = @import("slurm");
 const httpz = @import("httpz");
-const RequestContext = @import("route.zig").RequestContext;
-const RouteData = @import("route.zig").RouteData;
-pub const ParameterParser = @This();
+const openapi = @import("../openapi.zig");
+const QueryParameterComponent = openapi.QueryParameterComponent;
+const Parameter = QueryParameterComponent.Parameter;
+
+const QueryParameters = @This();
 
 arena: Allocator,
 qos: ?*slurm.List(*slurm.db.QoS) = null,
 db_conn: ?*slurm.db.Connection = null,
 
-pub const Style = enum {
-    simple,
-    form,
-};
-
-pub const ParserType = enum {
-    list,
-    list_qos_ids,
-    flags,
-    flags_int,
-    string,
-    integer,
-    @"enum",
-};
-
-pub const Reference = struct {
-    name: [:0]const u8,
-    component: QueryParameterComponent,
-};
-
-pub const Parameter = struct {
-    api_name: ?[:0]const u8 = null,
-    name: [:0]const u8,
-    description: []const u8,
-    required: bool = false,
-    style: Style = .form,
-    explode: bool = true,
-    parser: ParserType,
-
-    pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
-        try jw.beginObject();
-
-        try jw.objectField("in");
-        try jw.write("query");
-        try jw.objectField("name");
-        try jw.write(self.name);
-        try jw.objectField("description");
-        try jw.write(self.description);
-        try jw.objectField("required");
-        try jw.write(self.required);
-        try jw.objectField("style");
-        try jw.write(self.style);
-        try jw.objectField("explode");
-        try jw.write(self.explode);
-
-        try jw.objectField("schema");
-        try jw.beginObject();
-        // TODO: Figure out the proper json type
-        try jw.objectField("type");
-        try jw.write("string");
-        try jw.endObject();
-        try jw.endObject();
-    }
-};
-
-pub const QueryParameterComponent = struct {
-    api_type: type,
-    parameters: []const Parameter = &.{},
-    refs: []const Reference = &.{},
-
-    pub const init = parse;
-};
-
-pub fn initType(comptime T: type, arena: std.mem.Allocator) !T {
-    switch (@typeInfo(T)) {
-        .optional => |o| return try initType(o.child, arena),
-        .pointer => |p| {
-            const x = try arena.create(p.child);
-            x.* = try initType(p.child, arena);
-            return x;
-        },
-        .@"struct" => return .{},
-        else => @compileError("Unsupported Type"),
-    }
-}
-
-pub fn parse(self: *ParameterParser, comptime T: QueryParameterComponent, req: *httpz.Request) !T.api_type {
+pub fn parse(
+    self: *QueryParameters,
+    comptime T: QueryParameterComponent,
+    req: *httpz.Request
+) !T.api_type {
     var result: T.api_type = .{};
     var query = try req.query();
     var query_it = query.iterator();
@@ -101,7 +30,7 @@ pub fn parse(self: *ParameterParser, comptime T: QueryParameterComponent, req: *
 }
 
 pub fn processParamsForQueryItem(
-    self: *ParameterParser,
+    self: *QueryParameters,
     comptime Q: QueryParameterComponent,
     refs_inited: *[Q.refs.len]bool,
     result: *Q.api_type,
@@ -109,7 +38,7 @@ pub fn processParamsForQueryItem(
     value: []const u8
 ) !void {
     inline for (Q.parameters) |param| {
-        if (std.mem.eql(u8, key, param.name)) {
+        if (mem.eql(u8, key, param.name)) {
             try self.parseParam(result, value, param);
             return;
         }
@@ -130,7 +59,7 @@ pub fn processParamsForQueryItem(
             r;
 
         inline for (ref.component.parameters) |param| {
-            if (std.mem.eql(u8, key, param.name)) {
+            if (mem.eql(u8, key, param.name)) {
                 try self.parseParam(real, value, param);
                 return;
             }
@@ -139,30 +68,8 @@ pub fn processParamsForQueryItem(
     return error.InvalidQueryParameter;
 }
 
-fn isInteger(s: []const u8) bool {
-    _ = std.fmt.parseInt(usize, s, 10) catch return false;
-    return true;
-}
-
-fn ensureQoSLoaded(self: *ParameterParser) !void {
-    if (self.qos == null) {
-        if (self.db_conn == null) self.db_conn = try slurm.db.Connection.open();
-        self.qos = try slurm.db.qos.load(self.db_conn.?, .{});
-    }
-}
-
-fn qosNameToId(qos: *slurm.List(*slurm.db.QoS), name: []const u8) ?u32 {
-    var it = qos.iter();
-    defer it.deinit();
-
-    while (it.next()) |i| {
-        const n = slurm.parseCStr(i.name) orelse continue;
-        if (std.mem.eql(u8, n, name)) return i.id;
-    } else return null;
-}
-
-pub fn parseParam(
-    self: *ParameterParser,
+fn parseParam(
+    self: *QueryParameters,
     result: anytype,
     value: []const u8,
     comptime P: Parameter
@@ -179,9 +86,9 @@ pub fn parseParam(
         .integer => field.* = std.fmt.parseInt(T, value, 10) catch return error.InvalidNumber,
         .@"enum" => field.* = std.meta.stringToEnum(T, value) orelse return error.InvalidEnumValue,
         .flags, .flags_int => |f| {
-            if (std.mem.eql(u8, value, "true")) {
+            if (mem.eql(u8, value, "true")) {
                 field.* = if (f == .flags) true else 1;
-            } else if (std.mem.eql(u8, value, "false")) {
+            } else if (mem.eql(u8, value, "false")) {
                 field.* = if (f == .flags) false else 0;
             } else return error.InvalidBooleanValue;
         },
@@ -208,3 +115,39 @@ pub fn parseParam(
         },
     }
 }
+
+fn isInteger(s: []const u8) bool {
+    _ = std.fmt.parseInt(usize, s, 10) catch return false;
+    return true;
+}
+
+fn ensureQoSLoaded(self: *QueryParameters) !void {
+    if (self.qos == null) {
+        if (self.db_conn == null) self.db_conn = try slurm.db.Connection.open();
+        self.qos = try slurm.db.qos.load(self.db_conn.?, .{});
+    }
+}
+
+fn qosNameToId(qos: *slurm.List(*slurm.db.QoS), name: []const u8) ?u32 {
+    var it = qos.iter();
+    defer it.deinit();
+
+    while (it.next()) |i| {
+        const n = slurm.parseCStr(i.name) orelse continue;
+        if (mem.eql(u8, n, name)) return i.id;
+    } else return null;
+}
+
+fn initType(comptime T: type, arena: Allocator) !T {
+    switch (@typeInfo(T)) {
+        .optional => |o| return try initType(o.child, arena),
+        .pointer => |p| {
+            const x = try arena.create(p.child);
+            x.* = try initType(p.child, arena);
+            return x;
+        },
+        .@"struct" => return .{},
+        else => @compileError("Unsupported Type"),
+    }
+}
+

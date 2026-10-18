@@ -9,7 +9,6 @@ const RouteData = route.RouteData;
 const SlurmRequirements = route.SlurmRequirements;
 const dump = @import("../../json/Dumper.zig").dump;
 
-const query_params = @import("../../query_params.zig");
 const path_params = @import("../../openapi/parameters/path.zig");
 
 pub const routes = &.{

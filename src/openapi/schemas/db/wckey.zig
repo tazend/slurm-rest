@@ -4,8 +4,6 @@ const models = @import("../../../models.zig");
 const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
-const QueryParameter = @import("../../../query_params.zig").Parameter;
-
 pub const WCKeys: SchemaComponent = .array(WCKey, .list);
 pub const WCKeysResponse = openapi.GenericResponse("WCKeys", "List of Database WCKeys");
 pub const WCKeyResponse = openapi.GenericResponse("WCKey", "List of Database WCKey");
@@ -58,7 +56,7 @@ pub const WCKey: SchemaComponent = .{
 };
 
 pub const query = struct {
-    pub const FlagsParameters: []const QueryParameter = &.{
+    pub const FlagsParameters: []const openapi.QueryParameterComponent.Parameter = &.{
         .{
             .name = "with_deleted",
             .description = "Whether to also show deleted WCKeys",
@@ -78,7 +76,7 @@ pub const query = struct {
 
     pub const FilterMany: openapi.QueryParameterComponent = .{
         .api_type = slurm.db.WCKey.Filter,
-        .parameters = [_]QueryParameter{
+        .parameters = [_]openapi.QueryParameterComponent.Parameter{
             .{
                 .api_name = "cluster_list",
                 .name = "cluster",

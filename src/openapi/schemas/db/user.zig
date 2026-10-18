@@ -5,8 +5,6 @@ const models = @import("../../../models.zig");
 const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
-const QueryParameter = @import("../../../query_params.zig").Parameter;
-
 pub const Users: SchemaComponent = .array(User, .list);
 pub const UsersResponse = openapi.GenericResponse("Users", "List of Database Users");
 pub const UserResponse = openapi.GenericResponse("User", "Database User Information");
@@ -87,7 +85,7 @@ pub const User: SchemaComponent = .{
 
 pub const query = struct {
 
-    const FlagsParameters: []const QueryParameter = &.{
+    const FlagsParameters: []const openapi.QueryParameterComponent.Parameter = &.{
         .{
             .api_name = "with_assocs",
             .name = "with_associations",
@@ -142,7 +140,7 @@ pub const query = struct {
                 .component = AssocFilter,
             },
         },
-        .parameters = [_]QueryParameter{
+        .parameters = [_]openapi.QueryParameterComponent.Parameter{
             .{
                 .name = "admin_level",
                 .description = "Admin Level to filter for",

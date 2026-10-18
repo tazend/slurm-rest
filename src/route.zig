@@ -5,7 +5,7 @@ const Handler = @import("main.zig").Handler;
 const Dumper = @import("json/Dumper.zig");
 const openapi = @import("openapi.zig");
 const params_path = @import("openapi/parameters/path.zig");
-const params_query = @import("query_params.zig");
+const QueryParametes = @import("parameters/QueryParametes.zig");
 const Parser = @import("json/Parser.zig");
 
 pub const route_categories = &.{
@@ -106,7 +106,7 @@ pub fn RouteData(comptime R: type) type {
             else {};
 
             const query = if (Meta.parameters.query) |q| blk: {
-                var qparser: params_query.ParameterParser = .{
+                var qparser: QueryParametes = .{
                     .arena = ctx.arena,
                     .qos = if (Meta.requirements.qos) qos else null,
                     .db_conn = if (Meta.requirements.db_conn) db_conn else null,
@@ -129,7 +129,7 @@ pub fn RouteData(comptime R: type) type {
             };
         }
 
-        pub fn getQueryParser(self: @This()) params_query.ParameterParser {
+        pub fn getQueryParser(self: @This()) QueryParametes {
             return .{
                 .arena = self.arena,
                 .qos = if (Meta.requirements.qos) self.qos else null,
@@ -137,7 +137,7 @@ pub fn RouteData(comptime R: type) type {
             };
         }
 
-        pub fn pathIdToFilter(self: @This(), comptime key: [:0]const u8, comptime Q: params_query.QueryParameterComponent) !Q.api_type {
+        pub fn pathIdToFilter(self: @This(), comptime key: [:0]const u8, comptime Q: openapi.QueryParameterComponent) !Q.api_type {
             const fields = std.meta.fields(@TypeOf(self.parameters.path));
             if (fields.len > 1) {
                 @compileError("This function doesn't work on multiple Path Parameters");
@@ -249,6 +249,6 @@ pub const RouteMeta = struct {
 
     pub const Parameters = struct {
         path: ?params_path.Parameters = null,
-        query: ?params_query.QueryParameterComponent = null,
+        query: ?openapi.QueryParameterComponent = null,
     };
 };

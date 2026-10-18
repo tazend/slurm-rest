@@ -4,8 +4,6 @@ const JSONType = SerdeContext.JSONType;
 const slurm = @import("slurm");
 pub const models = @import("models.zig");
 
-pub const QueryParameterComponent = @import("query_params.zig").QueryParameterComponent;
-
 /// A specific Member or "Property" of a Schema Component
 pub const Property = struct {
     api_name: ?[:0]const u8 = null,
@@ -53,6 +51,67 @@ pub const SchemaComponent = struct {
             .child = T,
         };
     }
+};
+
+pub const ParameterStyle = enum {
+    simple,
+    form,
+};
+
+pub const QueryParameterComponent = struct {
+    api_type: type,
+    parameters: []const Parameter = &.{},
+    refs: []const Reference = &.{},
+
+    pub const Reference = struct {
+        name: [:0]const u8,
+        component: QueryParameterComponent,
+    };
+
+    pub const Parser = enum {
+        list,
+        list_qos_ids,
+        flags,
+        flags_int,
+        string,
+        integer,
+        @"enum",
+    };
+
+    pub const Parameter = struct {
+        api_name: ?[:0]const u8 = null,
+        name: [:0]const u8,
+        description: []const u8,
+        required: bool = false,
+        style: ParameterStyle = .form,
+        explode: bool = true,
+        parser: Parser,
+
+        pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
+            try jw.beginObject();
+
+            try jw.objectField("in");
+            try jw.write("query");
+            try jw.objectField("name");
+            try jw.write(self.name);
+            try jw.objectField("description");
+            try jw.write(self.description);
+            try jw.objectField("required");
+            try jw.write(self.required);
+            try jw.objectField("style");
+            try jw.write(self.style);
+            try jw.objectField("explode");
+            try jw.write(self.explode);
+
+            try jw.objectField("schema");
+            try jw.beginObject();
+            // TODO: Figure out the proper json type
+            try jw.objectField("type");
+            try jw.write("string");
+            try jw.endObject();
+            try jw.endObject();
+        }
+    };
 };
 
 pub fn GenericResponse(comptime name: [:0]const u8, comptime what: []const u8) SchemaComponent {
