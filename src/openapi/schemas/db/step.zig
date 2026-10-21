@@ -6,7 +6,7 @@ const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
 pub const DBSteps: openapi.SchemaComponent = .array(DBStep, .list);
-pub const DBStepsResponse = openapi.GenericResponse("DBSteps", "List of Database Steps");
+pub const DBStepsResponse = openapi.GenericResponse(DBSteps, "List of Database Steps");
 
 pub const DBStep: SchemaComponent = .{
     .api_type = slurm.db.Step,
@@ -100,7 +100,7 @@ pub const DBStep: SchemaComponent = .{
             .name = "step_id",
             .description = "Step ID Infos",
             .serde = .object(.container),
-            .ref = openapi.StepID,
+            .ref = openapi.components.step.StepID,
         },
         .{
             .api_name = "stepname",

@@ -8,6 +8,8 @@ const RouteMeta = route.RouteMeta;
 const RouteData = route.RouteData;
 const dump = @import("../../json/Dumper.zig").dump;
 
+const components = openapi.components.wckey;
+
 pub const routes = &.{
     @"GET /db/wckeys",
     @"GET /db/wckeys/:id",
@@ -22,11 +24,11 @@ pub const @"GET /db/wckeys" = struct {
         .description = "Get all WCKeys in the Database",
         .operationId = "getWCKeys",
         .response = .{
-            .ref = openapi.WCKeysResponse,
+            .ref = components.WCKeysResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .query = openapi.wckey.query.FilterMany,
+            .query = components.query.FilterMany,
         },
         .requirements = .{
             .db_conn = true,
@@ -50,12 +52,12 @@ pub const @"GET /db/wckeys/:id" = struct {
         .description = "Get one WCKey in the Database",
         .operationId = "getWCKey",
         .response = .{
-            .ref = openapi.WCKeyResponse,
+            .ref = components.WCKeyResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.wckey.path.IDParameter,
-            .query = openapi.wckey.query.FilterSingle,
+            .path = components.path.IDParameter,
+            .query = components.query.FilterSingle,
         },
         .requirements = .{
             .db_conn = true,

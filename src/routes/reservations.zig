@@ -9,6 +9,8 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
+const components = openapi.components.reservation;
+
 pub const routes = &.{
     @"GET /reservations",
     @"GET /reservations/:name",
@@ -27,7 +29,7 @@ pub const @"GET /reservations" = struct {
         .description = "Get all Reservations in the system",
         .operationId = "getReservations",
         .response = .{
-            .ref = openapi.ReservationsResponse,
+            .ref = components.ReservationsResponse,
             .description = "TODO",
         },
     };
@@ -51,11 +53,11 @@ pub const @"GET /reservations/:name" = struct {
         .description = "Get one specific Reservation",
         .operationId = "getReservation",
         .response = .{
-            .ref = openapi.ReservationResponse,
+            .ref = components.ReservationResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.reservation.path.NameParameter,
+            .path = components.path.NameParameter,
         },
     };
 
@@ -76,11 +78,11 @@ pub const @"DELETE /reservations/:name" = struct {
         .description = "Delete one specific Reservation",
         .operationId = "deleteReservation",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.reservation.path.NameParameter,
+            .path = components.path.NameParameter,
         },
     };
 
@@ -99,19 +101,19 @@ pub const @"POST /reservations/:name" = struct {
         .description = "Update a single Reservation",
         .operationId = "updateReservation",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
-        .requestBody = openapi.reservation.ReservationUpdatable,
+        .requestBody = components.ReservationUpdatable,
         .parameters = .{
-            .path = openapi.reservation.path.NameParameter,
+            .path = components.path.NameParameter,
         },
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
         var resv = ctx.body;
         resv.name = ctx.parameters.path.name;
-        const data = try dump(ctx.arena, ctx.body, openapi.reservation.ReservationUpdatable);
+        const data = try dump(ctx.arena, ctx.body, components.ReservationUpdatable);
         std.debug.print("{s}\n", .{data});
         try slurm.reservation.update(resv);
         return .{};
@@ -127,10 +129,10 @@ pub const @"POST /reservations" = struct {
         .description = "Update a list Reservation",
         .operationId = "updateReservations",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
-        .requestBody = openapi.reservation.ReservationUpdatableArray,
+        .requestBody = components.ReservationUpdatableArray,
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
@@ -150,19 +152,19 @@ pub const @"PUT /reservations/:name" = struct {
         .description = "Create a single Reservation",
         .operationId = "createReservation",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
-        .requestBody = openapi.reservation.ReservationUpdatable,
+        .requestBody = components.ReservationUpdatable,
         .parameters = .{
-            .path = openapi.reservation.path.NameParameter,
+            .path = components.path.NameParameter,
         },
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
         var resv = ctx.body;
         resv.name = ctx.parameters.path.name;
-        const data = try dump(ctx.arena, ctx.body, openapi.reservation.ReservationUpdatable);
+        const data = try dump(ctx.arena, ctx.body, components.ReservationUpdatable);
         std.debug.print("{s}\n", .{data});
         try slurm.reservation.create(resv);
         return .{};

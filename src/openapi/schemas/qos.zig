@@ -11,8 +11,8 @@ pub const QoS: SchemaComponent = .{
 };
 
 pub const QoSArray: SchemaComponent = .array(QoS, .list);
-pub const Response = openapi.GenericResponse("QoSArray", "List of QoS");
-pub const SingleResponse = openapi.GenericResponse("QoS", "Database QoS Information");
+pub const QoSResponse = openapi.GenericResponse(QoSArray, "List of QoS");
+pub const QoSSingleResponse = openapi.GenericResponse(QoS, "Database QoS Information");
 
 pub const Base: []const Property = &.{
     .{

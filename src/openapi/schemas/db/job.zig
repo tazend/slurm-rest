@@ -6,8 +6,8 @@ const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
 pub const DBJobs: SchemaComponent = .array(DBJob, .list);
-pub const DBJobsResponse = openapi.GenericResponse("DBJobs", "List of Database Jobs");
-pub const DBJobResponse = openapi.GenericResponse("DBJob", "Database Job Information");
+pub const DBJobsResponse = openapi.GenericResponse(DBJobs, "List of Database Jobs");
+pub const DBJobResponse = openapi.GenericResponse(DBJob, "Database Job Information");
 
 pub const DBJob: SchemaComponent = .{
     .api_type = slurm.db.Job,
@@ -245,7 +245,7 @@ pub const DBJob: SchemaComponent = .{
         .{
             .name = "steps",
             .description = "List of Steps",
-            .ref = openapi.DBSteps,
+            .ref = openapi.components.dbstep.DBSteps,
             .serde = .array(.list),
         },
         .{

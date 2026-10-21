@@ -21,7 +21,7 @@ pub const Partitions: SchemaComponent = .array(
 );
 
 pub const PartitionResponse = openapi.GenericResponse(
-    "Partition",
+    Partition,
     "Partition Information",
 );
 
@@ -40,19 +40,7 @@ pub const PartitionsResponse: SchemaComponent = .{
             .ref = Partitions,
             .serde = .string(.print),
         },
-        .{
-            .name = "meta",
-            .description = "Metadata",
-            .ref = openapi.Meta,
-            .serde = .object(.native),
-        },
-        .{
-            .name = "error",
-            .description = "Errors",
-            .ref = openapi.Error,
-            .serde = .object(.native),
-        },
-    },
+    } ++ openapi.components.BaseResponseProperties,
 };
 
 const IgnoredMembers: []const []const u8 = &.{

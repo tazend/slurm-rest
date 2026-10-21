@@ -21,7 +21,7 @@ pub const StepsResponse: SchemaComponent = .{
             .ref = Steps,
             .serde = .string(.print),
         },
-    } ++ openapi.BaseResponseProperties,
+    } ++ openapi.components.BaseResponseProperties,
 };
 
 pub const StepID: SchemaComponent = .{

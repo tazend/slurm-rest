@@ -9,10 +9,12 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
+const components = openapi.components.node;
+
 pub const routes = &.{
     @"GET /nodes",
-    @"GET /nodes/:name",
     @"POST /nodes",
+    @"GET /nodes/:name",
     @"POST /nodes/:name",
     @"DELETE /nodes/:name",
 };
@@ -26,7 +28,7 @@ pub const @"GET /nodes" = struct {
         .description = "Get all Nodes in the system",
         .operationId = "getNodes",
         .response = .{
-            .ref = openapi.NodesResponse,
+            .ref = components.NodesResponse,
             .description = "TODO",
         },
     };
@@ -50,11 +52,11 @@ pub const @"GET /nodes/:name" = struct {
         .description = "Get one specific Node",
         .operationId = "getNode",
         .response = .{
-            .ref = openapi.NodeResponse,
+            .ref = components.NodeResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.node.path.NameParameter,
+            .path = components.path.NameParameter,
         },
     };
 
@@ -74,14 +76,14 @@ pub const @"POST /nodes" = struct {
         .description = "Updates Nodes",
         .operationId = "updateNodes",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
-        .requestBody = openapi.NodeUpdatable,
+        .requestBody = components.NodeUpdatable,
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
-        const data = try dump(ctx.arena, ctx.body, openapi.NodeUpdatable);
+        const data = try dump(ctx.arena, ctx.body, components.NodeUpdatable);
         std.debug.print("{s}\n", .{data});
         //try slurm.node.update(ctx.body);
         return .{};
@@ -97,20 +99,20 @@ pub const @"POST /nodes/:name" = struct {
         .description = "Update one Nodes",
         .operationId = "updateNode",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.node.path.NameParameter,
+            .path = components.path.NameParameter,
         },
-        .requestBody = openapi.node.NodeUpdatableSingle,
+        .requestBody = components.NodeUpdatableSingle,
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
         var body = ctx.body;
         body.names = ctx.parameters.path.name;
 
-        const data = try dump(ctx.arena, body, openapi.node.NodeUpdatableSingle);
+        const data = try dump(ctx.arena, body, components.NodeUpdatableSingle);
         std.debug.print("{s}\n", .{data});
         std.debug.print("state: {any}\n", .{body.state});
         try slurm.node.update(body);
@@ -127,11 +129,11 @@ pub const @"DELETE /nodes/:name" = struct {
         .description = "Delete one specific Node",
         .operationId = "deleteNode",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.node.path.NameParameter,
+            .path = components.path.NameParameter,
         },
     };
 

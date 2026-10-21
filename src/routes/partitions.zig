@@ -9,6 +9,8 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
+const components = openapi.components.part;
+
 pub const routes = &.{
     @"GET /partitions",
     @"GET /partitions/:name",
@@ -25,7 +27,7 @@ pub const @"GET /partitions" = struct {
         .description = "Get all Partitions in the system",
         .operationId = "getPartitions",
         .response = .{
-            .ref = openapi.PartitionsResponse,
+            .ref = components.PartitionsResponse,
             .description = "TODO",
         },
     };
@@ -49,11 +51,11 @@ pub const @"GET /partitions/:name" = struct {
         .description = "Get one specific Partition",
         .operationId = "getNode",
         .response = .{
-            .ref = openapi.PartitionResponse,
+            .ref = components.PartitionResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.part.path.NameParameter,
+            .path = components.path.NameParameter,
         },
     };
 
@@ -74,19 +76,19 @@ pub const @"POST /partitions/:name" = struct {
         .description = "Update a single Partition",
         .operationId = "updatePartition",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
-        .requestBody = openapi.part.PartitionUpdatable,
+        .requestBody = components.PartitionUpdatable,
         .parameters = .{
-            .path = openapi.part.path.NameParameter,
+            .path = components.path.NameParameter,
         },
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
         var part = ctx.body;
         part.name = ctx.parameters.path.name;
-        const data = try dump(ctx.arena, part, openapi.Partition);
+        const data = try dump(ctx.arena, part, components.Partition);
         std.debug.print("{s}\n", .{data});
         try slurm.partition.update(part);
         return .{};
@@ -102,10 +104,10 @@ pub const @"POST /partitions" = struct {
         .description = "Update a list Partition",
         .operationId = "updatePartitions",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
-        .requestBody = openapi.part.PartitionUpdatableArray,
+        .requestBody = components.PartitionUpdatableArray,
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {

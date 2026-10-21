@@ -236,7 +236,7 @@ pub const RouteMeta = struct {
             try jw.objectField("schema");
             try jw.beginObject();
             try jw.objectField("$ref");
-            try jw.write("#/components/schemas/" ++ @typeName(self.ref.api_type));
+            try jw.write("#/components/schemas/" ++ comptime self.ref.getName2());
             try jw.endObject();
 
             try jw.endObject();

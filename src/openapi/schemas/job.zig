@@ -6,7 +6,7 @@ const SchemaComponent = openapi.SchemaComponent;
 const models = openapi.models;
 
 pub const Jobs: SchemaComponent = .array(Job, .load_response);
-pub const JobResponse = openapi.GenericResponse("Job", "Job information");
+pub const JobResponse = openapi.GenericResponse(Job, "Job information");
 
 pub const JobScriptResponse: SchemaComponent = .{
     .api_type = models.JobScriptResponse,
@@ -16,7 +16,7 @@ pub const JobScriptResponse: SchemaComponent = .{
             .description = "Job script",
             .serde = .string(.print),
         },
-    } ++ openapi.BaseResponseProperties,
+    } ++ openapi.components.BaseResponseProperties,
 };
 
 pub const JobsResponse: SchemaComponent = .{
@@ -39,7 +39,7 @@ pub const JobsResponse: SchemaComponent = .{
             .ref = Jobs,
             .serde = .string(.print),
         },
-    } ++ openapi.BaseResponseProperties,
+    } ++ openapi.components.BaseResponseProperties,
 };
 
 pub const SharedMembers: []const Property = &.{
@@ -882,7 +882,7 @@ pub const Job: SchemaComponent = .{
             .name = "step_id",
             .description = "Step ID",
             .serde = .object(.container),
-            .ref = openapi.StepID,
+            .ref = openapi.components.step.StepID,
         },
         .{
             .name = "start_time",

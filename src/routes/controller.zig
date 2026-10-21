@@ -8,6 +8,8 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
+const components = openapi.components.slurmctld;
+
 pub const routes = &.{
     @"GET /diag",
     @"POST /reconfigure",
@@ -22,7 +24,7 @@ pub const @"GET /diag" = struct {
         .description = "Get Controller Diagnostics",
         .operationId = "getSlurmctldDiag",
         .response = .{
-            .ref = openapi.ControllerStatisticsResponse,
+            .ref = components.ControllerStatisticsResponse,
             .description = "TODO",
         },
     };
@@ -30,7 +32,7 @@ pub const @"GET /diag" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.ControllerStatisticsResponse {
         const stats = try slurm.slurmctld.loadStats();
         defer stats.deinit();
-        return .{ .statistics = try dump(ctx.arena, stats, openapi.ControllerStatistics) };
+        return .{ .statistics = try dump(ctx.arena, stats, components.ControllerStatistics) };
     }
 };
 
@@ -43,7 +45,7 @@ pub const @"POST /reconfigure" = struct {
         .description = "Perform a reconfigure operation on the slurmctld",
         .operationId = "reconfigureSlurmctld",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
     };

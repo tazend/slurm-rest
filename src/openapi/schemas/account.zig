@@ -34,13 +34,13 @@ const OtherAccountProperties: []const Property = &.{
         .name = "associations",
         .description = "List of Associations (short-form) for the Account",
         .serde = .array(.assocs_short),
-        .ref = openapi.AssociationsShort,
+        .ref = openapi.components.assoc.AssociationsShort,
     },
     .{
         .name = "coordinators",
         .description = "List of Coordinators",
         .serde = .array(.list),
-        .ref = openapi.Coordinators,
+        .ref = openapi.components.coordinator.Coordinators,
     },
 };
 
@@ -55,8 +55,8 @@ pub const Account: SchemaComponent = .{
 };
 
 pub const Accounts: SchemaComponent = .array(Account, .list);
-pub const Response = openapi.GenericResponse("Accounts", "List of Accounts");
-pub const SingleResponse = openapi.GenericResponse("Account", "Database Account Information");
+pub const AccountsResponse = openapi.GenericResponse(Accounts, "List of Accounts");
+pub const AccountResponse = openapi.GenericResponse(Account, "Database Account Information");
 
 pub const query = struct {
     pub const Accounts: openapi.QueryParameterComponent = .{

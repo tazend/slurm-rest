@@ -8,6 +8,8 @@ const RouteMeta = route.RouteMeta;
 const RouteData = route.RouteData;
 const dump = @import("../../json/Dumper.zig").dump;
 
+const components = openapi.components.user;
+
 pub const routes = &.{
     @"GET /db/users",
     @"GET /db/users/:name",
@@ -23,11 +25,11 @@ pub const @"GET /db/users" = struct {
         .description = "Get all Users in the Database",
         .operationId = "getUsers",
         .response = .{
-            .ref = openapi.UsersResponse,
+            .ref = components.UsersResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .query = openapi.user.query.FilterMany,
+            .query = components.query.FilterMany,
         },
         .requirements = .{
             .db_conn = true,
@@ -50,12 +52,12 @@ pub const @"GET /db/users/:name" = struct {
         .description = "Get one User in the Database",
         .operationId = "getUser",
         .response = .{
-            .ref = openapi.UserResponse,
+            .ref = components.UserResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .query = openapi.user.query.FilterSingle,
-            .path = openapi.user.path.NameParameter,
+            .query = components.query.FilterSingle,
+            .path = components.path.NameParameter,
         },
         .requirements = .{
             .db_conn = true,
@@ -89,10 +91,10 @@ pub const @"POST /db/users" = struct {
         .description = "Modify a set of Users in the Database",
         .operationId = "modifyUsers",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
-        .requestBody = openapi.user.UsersUpdatable,
+        .requestBody = components.UsersUpdatable,
         .requirements = .{
             .db_conn = true,
         }

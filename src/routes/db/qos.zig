@@ -8,6 +8,8 @@ const RouteMeta = route.RouteMeta;
 const RouteData = route.RouteData;
 const dump = @import("../../json/Dumper.zig").dump;
 
+const components = openapi.components.qos;
+
 pub const routes = &.{
     @"GET /db/qos",
     @"GET /db/qos/:name",
@@ -22,11 +24,11 @@ pub const @"GET /db/qos" = struct {
         .description = "Get all QoS in the Database",
         .operationId = "getQoS",
         .response = .{
-            .ref = openapi.QoSResponse,
+            .ref = components.QoSResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .query = openapi.qos.query.Filter,
+            .query = components.query.Filter,
         },
         .requirements = .{
             .db_conn = true,
@@ -50,12 +52,12 @@ pub const @"GET /db/qos/:name" = struct {
         .description = "Get single QoS in the Database",
         .operationId = "getOneQoS",
         .response = .{
-            .ref = openapi.QoSSingleResponse,
+            .ref = components.QoSSingleResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.qos.path.NameParameter,
-            .query = openapi.qos.query.Flags,
+            .path = components.path.NameParameter,
+            .query = components.query.Flags,
         },
         .requirements = .{
             .db_conn = true,

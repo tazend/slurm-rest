@@ -7,8 +7,8 @@ const SchemaComponent = openapi.SchemaComponent;
 
 pub const AssociationsShort: SchemaComponent = .array(AssociationShort, .assocs_short);
 pub const Associations:      SchemaComponent = .array(Association, .list);
-pub const AssociationsResponse = openapi.GenericResponse("Associations", "List of Associations");
-pub const AssociationResponse = openapi.GenericResponse("Association", "Database Association Information");
+pub const AssociationsResponse = openapi.GenericResponse(Associations, "List of Associations");
+pub const AssociationResponse = openapi.GenericResponse(Association, "Database Association Information");
 
 pub const AssociationShort: SchemaComponent = .{
     .api_type = models.AssociationShort,

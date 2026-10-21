@@ -6,7 +6,7 @@ const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
 pub const Coordinators:      SchemaComponent = .array(Coordinator, .list);
-pub const CoordinatorsResponse = openapi.GenericResponse("Coordinators", "List of Database Coordinators");
+pub const CoordinatorsResponse = openapi.GenericResponse(Coordinator, "List of Database Coordinators");
 
 pub const Coordinator: SchemaComponent = .{
     .api_type = slurm.db.Coordinator,

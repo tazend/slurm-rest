@@ -9,6 +9,8 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
+const components = openapi.components.step;
+
 pub const routes = &.{
     @"GET /steps",
 };
@@ -23,7 +25,7 @@ pub const @"GET /steps" = struct {
         .description = "Get all Job steps in the system",
         .operationId = "getJobSteps",
         .response = .{
-            .ref = openapi.StepsResponse,
+            .ref = components.StepsResponse,
             .description = "TODO",
         },
     };

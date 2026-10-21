@@ -7,7 +7,21 @@ const models = @import("../../models.zig");
 
 pub const ReservationCoreSpecArray: SchemaComponent = .array(ReservationCoreSpec, .reservation_core_specs);
 pub const Reservations:      SchemaComponent = .array(Reservation, .load_response);
-pub const ReservationResponse =  openapi.GenericResponse("Reservation", "Reservation information");
+//pub const ReservationResponse =  openapi.GenericResponse(Reservation, "Reservation information");
+pub const ReservationResponse: SchemaComponent = .{
+    .api_type = models.ReservationResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "reservation",
+            .description = "Reservation information",
+            .ref = Reservation,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = Reservation,
+};
 
 pub const ReservationUpdatable: SchemaComponent = .{
     .api_type = slurm.Reservation.Updatable,
@@ -79,7 +93,7 @@ pub const ReservationsResponse: SchemaComponent = .{
             .ref = Reservations,
             .serde = .string(.print),
         },
-    } ++ openapi.BaseResponseProperties,
+    } ++ openapi.components.BaseResponseProperties,
 };
 
 const NameMember: []const Property = &.{

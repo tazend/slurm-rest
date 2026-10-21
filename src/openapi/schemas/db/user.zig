@@ -7,8 +7,8 @@ const SchemaComponent = openapi.SchemaComponent;
 
 pub const Users: SchemaComponent = .array(User, .list);
 pub const UsersUpdatable: SchemaComponent = .array(UserUpdatable, .list);
-pub const UsersResponse = openapi.GenericResponse("Users", "List of Database Users");
-pub const UserResponse = openapi.GenericResponse("User", "Database User Information");
+pub const UsersResponse = openapi.GenericResponse(Users, "List of Database Users");
+pub const UserResponse = openapi.GenericResponse(User, "Database User Information");
 
 pub const UserUpdatable: SchemaComponent = .{
     .api_type = slurm.db.User,
@@ -45,7 +45,7 @@ pub const User: SchemaComponent = .{
             .name = "associations",
             .description = "List of Associations (Short)",
             .serde = .array(.assocs_short),
-            .ref = openapi.AssociationsShort,
+            .ref = openapi.components.assoc.AssociationsShort,
         },
 //      .{
 //          .name = "backfill_usage",
@@ -57,7 +57,7 @@ pub const User: SchemaComponent = .{
             .name = "coordinators",
             .description = "List of Coordinators",
             .serde = .array(.list),
-            .ref = openapi.Coordinators,
+            .ref = openapi.components.coordinator.Coordinators,
         },
         .{
             .api_name = "def_qos_id",
@@ -101,7 +101,7 @@ pub const User: SchemaComponent = .{
             .name = "wckeys",
             .description = "List of WCKeys",
             .serde = .array(.list),
-            .ref = openapi.WCKeys,
+            .ref = openapi.components.wckey.WCKeys,
         },
     },
 };

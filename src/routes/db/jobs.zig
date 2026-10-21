@@ -9,6 +9,8 @@ const RouteData = route.RouteData;
 const SlurmRequirements = route.SlurmRequirements;
 const dump = @import("../../json/Dumper.zig").dump;
 
+const components = openapi.components.dbjob;
+
 pub const routes = &.{
     @"GET /db/jobs",
     @"GET /db/jobs/:id",
@@ -24,11 +26,11 @@ pub const @"GET /db/jobs" = struct {
         .description = "Get all Jobs in the Database",
         .operationId = "getDBJobs",
         .response = .{
-            .ref = openapi.DBJobsResponse,
+            .ref = components.DBJobsResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .query = openapi.dbjob.query.FilerMany,
+            .query = components.query.FilerMany,
         },
         .requirements = .{
             .db_conn = true,
@@ -53,12 +55,12 @@ pub const @"GET /db/jobs/:id" = struct {
         .description = "Get one Job in the Database",
         .operationId = "getDBJob",
         .response = .{
-            .ref = openapi.DBJobResponse,
+            .ref = components.DBJobResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.job.path.IDParameter,
-            .query = openapi.dbjob.query.FilterSingle,
+            .path = components.openapi.job.path.IDParameter,
+            .query = components.query.FilterSingle,
         },
         .requirements = .{
             .db_conn = true,

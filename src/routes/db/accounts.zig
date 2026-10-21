@@ -9,6 +9,8 @@ const RouteData = route.RouteData;
 const SlurmRequirements = route.SlurmRequirements;
 const dump = @import("../../json/Dumper.zig").dump;
 
+const components = openapi.components.account;
+
 pub const routes = &.{
     @"GET /db/accounts",
     @"GET /db/accounts/:name",
@@ -25,11 +27,11 @@ pub const @"GET /db/accounts" = struct {
         .description = "Get all Accounts in the Database",
         .operationId = "getAccounts",
         .response = .{
-            .ref = openapi.AccountsResponse,
+            .ref = components.AccountsResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .query = openapi.account.query.Accounts,
+            .query = components.query.Accounts,
         },
         .requirements = .{
             .db_conn = true,
@@ -64,12 +66,12 @@ pub const @"GET /db/accounts/:name" = struct {
         .description = "Get one Account in the Database",
         .operationId = "getAccount",
         .response = .{
-            .ref = openapi.AccountResponse,
+            .ref = components.AccountResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.account.path.NameParameter,
-            .query = openapi.account.query.FilterSingle,
+            .path = components.path.NameParameter,
+            .query = components.query.FilterSingle,
         },
         .requirements = .{
             .db_conn = true,
@@ -78,7 +80,7 @@ pub const @"GET /db/accounts/:name" = struct {
 
     pub fn handle(ctx: *const RouteData(@This())) !models.AccountSingleResponse {
         // TODO: make sure to free all lists
-        var names_filter = try ctx.pathIdToFilter("names", openapi.account.query.Accounts);
+        var names_filter = try ctx.pathIdToFilter("names", components.query.Accounts);
         names_filter.flags = ctx.parameters.query.flags;
 
         const resp = try slurm.db.account.load(ctx.db_conn, names_filter);
@@ -101,12 +103,12 @@ pub const @"POST /db/accounts/:name" = struct {
         .description = "Update one Account in the Database",
         .operationId = "updateAccount",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
-        .requestBody = openapi.account.AccountUpdatable,
+        .requestBody = components.AccountUpdatable,
         .parameters = .{
-            .path = openapi.account.path.NameParameter,
+            .path = components.path.NameParameter,
         },
         .requirements = .{
             .db_conn = true,
@@ -115,9 +117,9 @@ pub const @"POST /db/accounts/:name" = struct {
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
         // TODO: make sure to free all lists
-        var filter = try ctx.pathIdToFilter("names", openapi.account.query.Accounts);
+        var filter = try ctx.pathIdToFilter("names", components.query.Accounts);
 
-        const data = try dump(ctx.arena, ctx.body, openapi.account.AccountUpdatable);
+        const data = try dump(ctx.arena, ctx.body, components.AccountUpdatable);
         std.debug.print("{s}\n", .{data});
         // TODO: Error on invalid account
         _ = try slurm.db.account.modify(ctx.db_conn, &filter, &ctx.body);
@@ -135,11 +137,11 @@ pub const @"DELETE /db/accounts/:name" = struct {
         .description = "Delete Account in the Database",
         .operationId = "deleteAccount",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.account.path.NameParameter,
+            .path = components.path.NameParameter,
         },
         .requirements = .{
             .db_conn = true,
@@ -148,7 +150,7 @@ pub const @"DELETE /db/accounts/:name" = struct {
 
     pub fn handle(ctx: *const RouteData(@This())) !models.BaseResponse {
         // TODO: make sure to free all lists
-        var filter = try ctx.pathIdToFilter("names", openapi.account.query.Accounts);
+        var filter = try ctx.pathIdToFilter("names", components.query.Accounts);
 
         _ = try slurm.db.account.remove(ctx.db_conn, &filter);
         try ctx.db_conn.commit();

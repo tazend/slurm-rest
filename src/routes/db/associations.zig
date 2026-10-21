@@ -8,6 +8,8 @@ const RouteMeta = route.RouteMeta;
 const RouteData = route.RouteData;
 const dump = @import("../../json/Dumper.zig").dump;
 
+const components = openapi.components.assoc;
+
 pub const routes = &.{
     @"GET /db/associations",
     @"GET /db/associations/:id",
@@ -22,11 +24,11 @@ pub const @"GET /db/associations" = struct {
         .description = "Get all Associations in the Database",
         .operationId = "getAssociations",
         .response = .{
-            .ref = openapi.AssociationsResponse,
+            .ref = components.AssociationsResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .query = openapi.assoc.query.FilterMany,
+            .query = components.query.FilterMany,
         },
         .requirements = .{
             .db_conn = true,
@@ -49,12 +51,12 @@ pub const @"GET /db/associations/:id" = struct {
         .description = "Get one Association in the Database",
         .operationId = "getAssociation",
         .response = .{
-            .ref = openapi.assoc.AssociationResponse,
+            .ref = components.AssociationResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .query = openapi.assoc.query.FilterSingle,
-            .path = openapi.assoc.path.IDParameter,
+            .query = components.query.FilterSingle,
+            .path = components.path.IDParameter,
         },
         .requirements = .{
             .db_conn = true,

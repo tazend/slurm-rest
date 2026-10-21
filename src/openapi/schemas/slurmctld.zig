@@ -13,7 +13,7 @@ pub const ControllerStatisticsResponse: SchemaComponent = .{
             .description = "Controller statistics",
             .serde = .string(.print),
         },
-    } ++ openapi.BaseResponseProperties,
+    } ++ openapi.components.BaseResponseProperties,
 };
 
 pub const ControllerStatistics: SchemaComponent = .{

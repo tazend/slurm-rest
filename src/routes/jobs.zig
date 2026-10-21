@@ -9,6 +9,8 @@ const RouteData = @import("../route.zig").RouteData;
 const SlurmRequirements = @import("../route.zig").SlurmRequirements;
 const dump = @import("../json/Dumper.zig").dump;
 
+const components = openapi.components.job;
+
 pub const routes = &.{
     @"GET /jobs",
     @"GET /jobs/:id",
@@ -26,7 +28,7 @@ pub const @"GET /jobs" = struct {
         .description = "Get all Jobs in the System",
         .operationId = "getJobs",
         .response = .{
-            .ref = openapi.JobsResponse,
+            .ref = components.JobsResponse,
             .description = "TODO",
         },
     };
@@ -51,11 +53,11 @@ pub const @"GET /jobs/:id" = struct {
         .description = "Get a single Job by ID",
         .operationId = "getJob",
         .response = .{
-            .ref = openapi.JobResponse,
+            .ref = components.JobResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.job.path.IDParameter,
+            .path = components.path.IDParameter,
         },
     };
 
@@ -75,11 +77,11 @@ pub const @"GET /jobs/:id/steps" = struct {
         .description = "Get all Steps for a single Job",
         .operationId = "getJobSteps",
         .response = .{
-            .ref = openapi.StepsResponse,
+            .ref = openapi.components.step.StepsResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.job.path.IDParameter,
+            .path = components.path.IDParameter,
         },
     };
 
@@ -102,11 +104,11 @@ pub const @"GET /jobs/:id/script" = struct {
         .description = "Get batch script for a Job",
         .operationId = "getJobScript",
         .response = .{
-            .ref = openapi.JobScriptResponse,
+            .ref = components.JobScriptResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.job.path.IDParameter,
+            .path = components.path.IDParameter,
         },
     };
 
@@ -125,11 +127,11 @@ pub const @"DELETE /jobs/:id" = struct {
         .description = "Delete a single Job by ID",
         .operationId = "deleteJob",
         .response = .{
-            .ref = openapi.BaseResponse,
+            .ref = openapi.components.BaseResponse,
             .description = "TODO",
         },
         .parameters = .{
-            .path = openapi.job.path.IDParameter,
+            .path = components.path.IDParameter,
         },
     };
 

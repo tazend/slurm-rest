@@ -6,7 +6,7 @@ const SchemaComponent = openapi.SchemaComponent;
 const models = openapi.models;
 
 pub const Nodes:             SchemaComponent = .array(Node, .load_response);
-pub const NodeResponse =         openapi.GenericResponse("Node", "Node information");
+pub const NodeResponse =         openapi.GenericResponse(Node, "Node information");
 
 pub const NodesResponse: SchemaComponent = .{
     .child = Nodes,
@@ -23,7 +23,7 @@ pub const NodesResponse: SchemaComponent = .{
             .ref = Nodes,
             .serde = .string(.print),
         },
-    } ++ openapi.BaseResponseProperties,
+    } ++ openapi.components.BaseResponseProperties,
 };
 
 pub const NodeUpdatable: SchemaComponent = .{

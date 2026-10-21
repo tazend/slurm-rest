@@ -4,6 +4,8 @@ pub const SerdeContext = @import("json/SerdeContext.zig");
 pub const JSONType = SerdeContext.JSONType;
 pub const models = @import("models.zig");
 
+pub const openapi = @This();
+
 /// A specific Member or "Property" of a Schema Component
 pub const Property = struct {
     api_name: ?[:0]const u8 = null,
@@ -34,6 +36,23 @@ pub const SchemaComponent = struct {
     properties: []const Property = &.{},
     ignored_fields: []const []const u8 = &.{},
     child: ?SchemaComponent = null,
+
+    pub fn getName2(self: SchemaComponent) [:0]const u8 {
+        const comps = @typeInfo(components).@"struct".decls;
+        inline for (comps) |component_decl| {
+            const comp = @field(components, component_decl.name);
+
+            const decls = @typeInfo(comp).@"struct".decls;
+            inline for (decls) |decl| {
+                const field = @field(comp, decl.name);
+                if (@TypeOf(field) == SchemaComponent) {
+                    if (std.meta.eql(self, field)) return decl.name;
+                }
+            }
+        }
+
+        @compileError("Unable to find name for component " ++ @typeName(self.api_type));
+    }
 
     pub fn getChild(self: SchemaComponent) SchemaComponent {
         return self.child orelse @compileError("Missing 'child' on " ++ @typeName(@TypeOf(self.api_type)));
@@ -86,31 +105,6 @@ pub const QueryParameterComponent = struct {
         style: ParameterStyle = .form,
         explode: bool = true,
         parser: Parser,
-
-        pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
-            try jw.beginObject();
-
-            try jw.objectField("in");
-            try jw.write("query");
-            try jw.objectField("name");
-            try jw.write(self.name);
-            try jw.objectField("description");
-            try jw.write(self.description);
-            try jw.objectField("required");
-            try jw.write(self.required);
-            try jw.objectField("style");
-            try jw.write(self.style);
-            try jw.objectField("explode");
-            try jw.write(self.explode);
-
-            try jw.objectField("schema");
-            try jw.beginObject();
-            // TODO: Figure out the proper json type
-            try jw.objectField("type");
-            try jw.write("string");
-            try jw.endObject();
-            try jw.endObject();
-        }
     };
 };
 
@@ -138,41 +132,10 @@ pub const PathParameterComponent = struct {
         style: ParameterStyle = .simple,
         explode: bool = false,
         @"type": JSONType,
-
-        pub fn jsonStringify(self: *const @This(), jw: anytype) !void {
-            try jw.beginObject();
-
-            try jw.objectField("in");
-            try jw.write("path");
-            try jw.objectField("name");
-            try jw.write(self.name);
-            try jw.objectField("description");
-            try jw.write(self.description);
-            try jw.objectField("required");
-            try jw.write(self.required);
-            try jw.objectField("style");
-            try jw.write(self.style);
-            try jw.objectField("explode");
-            try jw.write(self.explode);
-
-            try jw.objectField("schema");
-            try jw.beginObject();
-            try jw.objectField("type");
-            try jw.write(self.@"type");
-            try jw.endObject();
-            try jw.endObject();
-        }
     };
 };
 
-
-pub fn GenericResponse(comptime name: [:0]const u8, comptime what: []const u8) SchemaComponent {
-    if (!@hasDecl(@This(), name)) {
-        @compileError("There is no SchemaComponent available for: '" ++ name ++ "'");
-    }
-
-    const T = @field(@This(), name);
-
+pub fn GenericResponse(comptime schema: SchemaComponent, comptime what: []const u8) SchemaComponent {
     const decls = @typeInfo(models).@"struct".decls;
     const Response = blk: {
         for (decls) |decl| {
@@ -181,7 +144,7 @@ pub fn GenericResponse(comptime name: [:0]const u8, comptime what: []const u8) S
             if (Info == .type) {
                 if (@typeInfo(field) == .@"struct") {
                     if (@hasDecl(field, "Schema") and @TypeOf(field.Schema) == SchemaComponent) {
-                        if (field.Schema.api_type == T.api_type) {
+                        if (field.Schema.api_type == schema.api_type) {
                             break :blk field;
                         }
                     }
@@ -189,9 +152,10 @@ pub fn GenericResponse(comptime name: [:0]const u8, comptime what: []const u8) S
             }
 
         }
-        @compileError("No response implementation found for " ++ @typeName(T.api_type));
+        @compileError("No response implementation found for " ++ @typeName(schema.api_type));
     };
 
+    const name = comptime schema.getName2();
     const name_lower = comptime blk: {
         var buf: [name.len:0]u8 = undefined;
         buf[name.len] = 0;
@@ -206,46 +170,14 @@ pub fn GenericResponse(comptime name: [:0]const u8, comptime what: []const u8) S
                 .api_name = "data",
                 .name = &name_lower,
                 .description = what,
-                .ref = T,
+                .ref = schema,
                 .serde = .string(.print),
             },
-        } ++ BaseResponseProperties,
+        } ++ components.BaseResponseProperties,
         .serde = .object(.container),
-        .child = T,
+        .child = schema,
     };
 }
-
-pub const Error: SchemaComponent = .{
-    .api_type = models.Error,
-    .properties = &.{
-        .{
-            .name = "title",
-            .description = "Name of the Error",
-            .serde = .string(.native),
-        },
-        .{
-            .name = "detail",
-            .description = "Explanation of the Error that occured",
-            .serde = .string(.native),
-        },
-    },
-};
-
-pub const NumberU64: SchemaComponent = .{
-    .api_type = models.Number(u64),
-    .properties = &.{
-        .{
-            .name = "value",
-            .description = "Number value",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "infinite",
-            .description = "Whether the number is infinite or not",
-            .serde = .boolean(.native),
-        },
-    },
-};
 
 pub fn Number(comptime T: type) SchemaComponent {
     return .{
@@ -265,173 +197,225 @@ pub fn Number(comptime T: type) SchemaComponent {
     };
 }
 
-pub const SlurmVersion: SchemaComponent = .{
-    .api_type = models.SlurmVersion,
-    .properties = &.{
-        .{
-            .name = "major",
-            .description = "Major Version of Slurm",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "major",
-            .description = "Major Version of Slurm",
-            .serde = .integer(.native),
-        },
-        .{
-            .name = "major",
-            .description = "Major Version of Slurm",
-            .serde = .integer(.native),
-        },
-    },
-};
+pub const components = struct {
+    pub const reservation = @import("openapi/schemas/reservation.zig");
+    pub const dbjob = @import("openapi/schemas/db/job.zig");
+    pub const dbstep = @import("openapi/schemas/db/step.zig");
+    pub const qos = @import("openapi/schemas/qos.zig");
+    pub const part = @import("openapi/schemas/partition.zig");
+    pub const slurmctld = @import("openapi/schemas/slurmctld.zig");
+    pub const node = @import("openapi/schemas/node.zig");
+    pub const job = @import("openapi/schemas/job.zig");
+    pub const step = @import("openapi/schemas/step.zig");
+    pub const account = @import("openapi/schemas/account.zig");
+    pub const user = @import("openapi/schemas/db/user.zig");
+    pub const coordinator = @import("openapi/schemas/db/coordinator.zig");
+    pub const wckey = @import("openapi/schemas/db/wckey.zig");
+    pub const assoc = @import("openapi/schemas/association.zig");
 
-pub const SlurmMeta: SchemaComponent = .{
-    .api_type = models.SlurmMeta,
-    .properties = &.{
-        .{
-            .name = "cluster",
-            .description = "Name of the cluster",
-            .serde = .string(.native),
+    pub const SpecificationResponse: SchemaComponent = .{
+        .api_type = models.OpenAPISpecificationResponse,
+        .properties = [_]Property{
+            .{
+                .name = "spec",
+                .description = "OpenAPI Specification",
+                .serde = .string(.print),
+            },
+        } ++ BaseResponseProperties,
+    };
+
+    pub const Error: SchemaComponent = .{
+        .api_type = models.Error,
+        .properties = &.{
+            .{
+                .name = "title",
+                .description = "Name of the Error",
+                .serde = .string(.native),
+            },
+            .{
+                .name = "detail",
+                .description = "Explanation of the Error that occured",
+                .serde = .string(.native),
+            },
         },
-        .{
-            .name = "release",
-            .description = "Slurm Release string",
-            .serde = .string(.native),
+    };
+
+    pub const NumberU64: SchemaComponent = .{
+        .api_type = models.Number(u64),
+        .properties = &.{
+            .{
+                .name = "value",
+                .description = "Number value",
+                .serde = .integer(.native),
+            },
+            .{
+                .name = "infinite",
+                .description = "Whether the number is infinite or not",
+                .serde = .boolean(.native),
+            },
         },
+    };
+
+    pub const SlurmVersion: SchemaComponent = .{
+        .api_type = models.SlurmVersion,
+        .properties = &.{
+            .{
+                .name = "major",
+                .description = "Major Version of Slurm",
+                .serde = .integer(.native),
+            },
+            .{
+                .name = "major",
+                .description = "Major Version of Slurm",
+                .serde = .integer(.native),
+            },
+            .{
+                .name = "major",
+                .description = "Major Version of Slurm",
+                .serde = .integer(.native),
+            },
+        },
+    };
+
+    pub const SlurmMeta: SchemaComponent = .{
+        .api_type = models.SlurmMeta,
+        .properties = &.{
+            .{
+                .name = "cluster",
+                .description = "Name of the cluster",
+                .serde = .string(.native),
+            },
+            .{
+                .name = "release",
+                .description = "Slurm Release string",
+                .serde = .string(.native),
+            },
+            .{
+                .name = "version",
+                .description = "Major, Minor and Micro version of Slurm",
+                .ref = SlurmVersion,
+                .serde = .object(.native),
+            },
+        },
+    };
+
+    pub const Meta: SchemaComponent = .{
+        .api_type = models.Meta,
+        .properties = &.{
+            .{
+                .name = "slurm",
+                .description = "Slurm specific Metadata",
+                .ref = SlurmMeta,
+                .serde = .object(.native),
+            },
+        },
+    };
+
+    pub const BaseResponseProperties: []const Property = &.{
         .{
-            .name = "version",
-            .description = "Major, Minor and Micro version of Slurm",
-            .ref = SlurmVersion,
+            .name = "meta",
+            .description = "Metadata",
+            .ref = Meta,
             .serde = .object(.native),
         },
-    },
-};
-
-pub const Meta: SchemaComponent = .{
-    .api_type = models.Meta,
-    .properties = &.{
         .{
-            .name = "slurm",
-            .description = "Slurm specific Metadata",
-            .ref = SlurmMeta,
+            .name = "error",
+            .description = "Errors",
+            .ref = Error,
             .serde = .object(.native),
         },
-    },
+    };
+
+    pub const BaseResponse: SchemaComponent = .{
+        .api_type = models.BaseResponse,
+        .properties = BaseResponseProperties,
+    };
 };
 
-pub const BaseResponseProperties: []const Property = &.{
-    .{
-        .name = "meta",
-        .description = "Metadata",
-        .ref = Meta,
-        .serde = .object(.native),
-    },
-    .{
-        .name = "error",
-        .description = "Errors",
-        .ref = Error,
-        .serde = .object(.native),
-    },
-};
+//  pub const reservation = @import("openapi/schemas/reservation.zig");
+//  pub const ReservationCoreSpec = reservation.ReservationCoreSpec;
+//  pub const ReservationCoreSpecArray = reservation.ReservationCoreSpecArray;
+//  pub const Reservations = reservation.Reservations;
+//  pub const ReservationResponse = reservation.ReservationResponse;
+//  pub const ReservationsResponse = reservation.ReservationsResponse;
+//  pub const Reservation = reservation.Reservation;
 
-pub const BaseResponse: SchemaComponent = .{
-    .api_type = models.BaseResponse,
-    .properties = BaseResponseProperties,
-};
+//  pub const dbjob = @import("openapi/schemas/db/job.zig");
+//  pub const DBJob = dbjob.DBJob;
+//  pub const DBJobs = dbjob.DBJobs;
+//  pub const DBJobsResponse = dbjob.DBJobsResponse;
+//  pub const DBJobResponse = dbjob.DBJobResponse;
 
-pub const SpecificationResponse: SchemaComponent = .{
-    .api_type = models.OpenAPISpecificationResponse,
-    .properties = [_]Property{
-        .{
-            .name = "spec",
-            .description = "OpenAPI Specification",
-            .serde = .string(.print),
-        },
-    } ++ BaseResponseProperties,
-};
+//  pub const dbstep = @import("openapi/schemas/db/step.zig");
+//  pub const DBStep = dbstep.DBStep;
+//  pub const DBSteps = dbstep.DBSteps;
+//  pub const DBStepsResponse = dbstep.DBStepsResponse;
 
-pub const reservation = @import("openapi/schemas/reservation.zig");
-pub const ReservationCoreSpec = reservation.ReservationCoreSpec;
-pub const ReservationCoreSpecArray = reservation.ReservationCoreSpecArray;
-pub const Reservations = reservation.Reservations;
-pub const ReservationResponse = reservation.ReservationResponse;
-pub const ReservationsResponse = reservation.ReservationsResponse;
-pub const Reservation = reservation.Reservation;
+//  pub const qos = @import("openapi/schemas/qos.zig");
+//  pub const QoS = qos.QoS;
+//  pub const QoSArray = qos.QoSArray;
+//  pub const QoSResponse = qos.Response;
+//  pub const QoSSingleResponse = qos.SingleResponse;
 
-pub const dbjob = @import("openapi/schemas/db/job.zig");
-pub const DBJob = dbjob.DBJob;
-pub const DBJobs = dbjob.DBJobs;
-pub const DBJobsResponse = dbjob.DBJobsResponse;
-pub const DBJobResponse = dbjob.DBJobResponse;
+//  pub const part = @import("openapi/schemas/partition.zig");
+//  pub const Partition = part.Partition;
+//  pub const Partitions = part.Partitions;
+//  pub const PartitionsResponse = part.PartitionsResponse;
+//  pub const PartitionResponse = part.PartitionResponse;
 
-pub const dbstep = @import("openapi/schemas/db/step.zig");
-pub const DBStep = dbstep.DBStep;
-pub const DBSteps = dbstep.DBSteps;
-pub const DBStepsResponse = dbstep.DBStepsResponse;
+//  pub const slurmctld = @import("openapi/schemas/slurmctld.zig");
+//  pub const ControllerStatistics = slurmctld.ControllerStatistics;
+//  pub const ControllerStatisticsResponse = slurmctld.ControllerStatisticsResponse;
 
-pub const qos = @import("openapi/schemas/qos.zig");
-pub const QoS = qos.QoS;
-pub const QoSArray = qos.QoSArray;
-pub const QoSResponse = qos.Response;
-pub const QoSSingleResponse = qos.SingleResponse;
+//  pub const node = @import("openapi/schemas/node.zig");
+//  pub const Node = node.Node;
+//  pub const Nodes = node.Nodes;
+//  pub const NodeState = node.NodeState;
+//  pub const AccountingGatherEnergy = node.AccountingGatherEnergy;
+//  pub const NodesResponse = node.NodesResponse;
+//  pub const NodeResponse = node.NodeResponse;
+//  pub const NodeUpdatable = node.NodeUpdatable;
+//  pub const NodeUpdatableSingle = node.NodeUpdatableSingle;
 
-pub const part = @import("openapi/schemas/partition.zig");
-pub const Partition = part.Partition;
-pub const Partitions = part.Partitions;
-pub const PartitionsResponse = part.PartitionsResponse;
-pub const PartitionResponse = part.PartitionResponse;
+//  pub const job = @import("openapi/schemas/job.zig");
+//  pub const Job = job.Job;
+//  pub const Jobs = job.Jobs;
+//  pub const JobsResponse = job.JobsResponse;
+//  pub const JobResponse = job.JobResponse;
+//  pub const JobScriptResponse = job.JobScriptResponse;
 
-pub const slurmctld = @import("openapi/schemas/slurmctld.zig");
-pub const ControllerStatistics = slurmctld.ControllerStatistics;
-pub const ControllerStatisticsResponse = slurmctld.ControllerStatisticsResponse;
+//  pub const step = @import("openapi/schemas/step.zig");
+//  pub const Step = step.Step;
+//  pub const Steps = step.Steps;
+//  pub const StepsResponse = step.StepsResponse;
+//  pub const StepID = step.StepID;
 
-pub const node = @import("openapi/schemas/node.zig");
-pub const Node = node.Node;
-pub const Nodes = node.Nodes;
-pub const NodesResponse = node.NodesResponse;
-pub const NodeResponse = node.NodeResponse;
-pub const NodeUpdatable = node.NodeUpdatable;
+//  pub const account = @import("openapi/schemas/account.zig");
+//  pub const Account = account.Account;
+//  pub const Accounts = account.Accounts;
+//  pub const AccountsResponse = account.Response;
+//  pub const AccountResponse = account.SingleResponse;
 
-pub const job = @import("openapi/schemas/job.zig");
-pub const Job = job.Job;
-pub const Jobs = job.Jobs;
-pub const JobsResponse = job.JobsResponse;
-pub const JobResponse = job.JobResponse;
-pub const JobScriptResponse = job.JobScriptResponse;
+//  pub const user = @import("openapi/schemas/db/user.zig");
+//  pub const User = user.User;
+//  pub const Users = user.Users;
+//  pub const UsersResponse = user.UsersResponse;
+//  pub const UserResponse = user.UserResponse;
 
-pub const step = @import("openapi/schemas/step.zig");
-pub const Step = step.Step;
-pub const Steps = step.Steps;
-pub const StepsResponse = step.StepsResponse;
-pub const StepID = step.StepID;
+//  pub const coordinator = @import("openapi/schemas/db/coordinator.zig");
+//  pub const Coordinator = coordinator.Coordinator;
+//  pub const Coordinators = coordinator.Coordinators;
+//  pub const CoordinatorsResponse = coordinator.CoordinatorsResponse;
 
-pub const account = @import("openapi/schemas/account.zig");
-pub const Account = account.Account;
-pub const Accounts = account.Accounts;
-pub const AccountsResponse = account.Response;
-pub const AccountResponse = account.SingleResponse;
+//  pub const wckey = @import("openapi/schemas/db/wckey.zig");
+//  pub const WCKey = wckey.WCKey;
+//  pub const WCKeys = wckey.WCKeys;
+//  pub const WCKeysResponse = wckey.WCKeysResponse;
+//  pub const WCKeyResponse = wckey.WCKeyResponse;
 
-pub const user = @import("openapi/schemas/db/user.zig");
-pub const User = user.User;
-pub const Users = user.Users;
-pub const UsersResponse = user.UsersResponse;
-pub const UserResponse = user.UserResponse;
-
-pub const coordinator = @import("openapi/schemas/db/coordinator.zig");
-pub const Coordinator = coordinator.Coordinator;
-pub const Coordinators = coordinator.Coordinators;
-pub const CoordinatorsResponse = coordinator.CoordinatorsResponse;
-
-pub const wckey = @import("openapi/schemas/db/wckey.zig");
-pub const WCKey = wckey.WCKey;
-pub const WCKeys = wckey.WCKeys;
-pub const WCKeysResponse = wckey.WCKeysResponse;
-pub const WCKeyResponse = wckey.WCKeyResponse;
-
-pub const assoc = @import("openapi/schemas/association.zig");
-pub const Association = assoc.Association;
-pub const Associations = assoc.Associations;
-pub const AssociationShort = assoc.AssociationShort;
-pub const AssociationsShort = assoc.AssociationsShort;
-pub const AssociationsResponse = assoc.AssociationsResponse;
+//  pub const assoc = @import("openapi/schemas/association.zig");
+//  pub const Association = assoc.Association;
+//  pub const Associations = assoc.Associations;
+//  pub const AssociationShort = assoc.AssociationShort;
+//  pub const AssociationsShort = assoc.AssociationsShort;
+//  pub const AssociationsResponse = assoc.AssociationsResponse;

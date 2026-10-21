@@ -5,8 +5,8 @@ const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
 pub const WCKeys: SchemaComponent = .array(WCKey, .list);
-pub const WCKeysResponse = openapi.GenericResponse("WCKeys", "List of Database WCKeys");
-pub const WCKeyResponse = openapi.GenericResponse("WCKey", "List of Database WCKey");
+pub const WCKeysResponse = openapi.GenericResponse(WCKeys, "List of Database WCKeys");
+pub const WCKeyResponse = openapi.GenericResponse(WCKey, "List of Database WCKey");
 
 pub const WCKey: SchemaComponent = .{
     .api_type = slurm.db.WCKey,

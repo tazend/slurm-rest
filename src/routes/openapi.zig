@@ -23,7 +23,7 @@ pub const @"GET /openapi" = struct {
         .description = "Get the OpenAPI Specification",
         .operationId = "getOpenAPI",
         .response = .{
-            .ref = openapi.SpecificationResponse,
+            .ref = openapi.components.SpecificationResponse,
             .description = "TODO",
         },
     };
