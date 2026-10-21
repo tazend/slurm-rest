@@ -65,7 +65,7 @@ pub const @"GET /db/associations/:id" = struct {
 
     pub fn handle(ctx: *const RouteData(@This())) !models.AssociationResponse {
         // TODO: make sure to free all lists
-        var names_filter = try ctx.pathIdToFilter("ids", openapi.assoc.query.FilterMany);
+        var names_filter = try ctx.pathIdToFilter("ids", components.query.FilterMany);
         names_filter.flags = ctx.parameters.query.flags;
 
         const resp = try slurm.db.association.load(ctx.db_conn, names_filter);

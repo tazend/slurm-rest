@@ -6,8 +6,36 @@ const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
 pub const DBJobs: SchemaComponent = .array(DBJob, .list);
-pub const DBJobsResponse = openapi.GenericResponse(DBJobs, "List of Database Jobs");
-pub const DBJobResponse = openapi.GenericResponse(DBJob, "Database Job Information");
+
+pub const DBJobsResponse: SchemaComponent = .{
+    .api_type = models.DBJobsResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "jobs",
+            .description = "List of Database Jobs",
+            .ref = DBJobs,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = DBJobs,
+};
+
+pub const DBJobResponse: SchemaComponent = .{
+    .api_type = models.DBJobResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "job",
+            .description = "Database Job information",
+            .ref = DBJob,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = DBJob,
+};
 
 pub const DBJob: SchemaComponent = .{
     .api_type = slurm.db.Job,

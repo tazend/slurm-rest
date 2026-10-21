@@ -11,8 +11,36 @@ pub const QoS: SchemaComponent = .{
 };
 
 pub const QoSArray: SchemaComponent = .array(QoS, .list);
-pub const QoSResponse = openapi.GenericResponse(QoSArray, "List of QoS");
-pub const QoSSingleResponse = openapi.GenericResponse(QoS, "Database QoS Information");
+
+pub const QoSResponse: SchemaComponent = .{
+    .api_type = models.QoSResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "qos",
+            .description = "QoS Information",
+            .ref = QoSArray,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = QoSArray,
+};
+
+pub const QoSSingleResponse: SchemaComponent = .{
+    .api_type = models.QoSSingleResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "qos",
+            .description = "QoS Information",
+            .ref = QoS,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = QoS,
+};
 
 pub const Base: []const Property = &.{
     .{

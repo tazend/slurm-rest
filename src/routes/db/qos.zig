@@ -39,7 +39,7 @@ pub const @"GET /db/qos" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.QoSResponse {
         const resp = try slurm.db.qos.load(ctx.db_conn, ctx.parameters.query);
         defer resp.deinit();
-        return .{ .data = try dump(ctx.arena, resp, openapi.QoSArray)};
+        return .{ .data = try ctx.dumpData(resp)};
     }
 };
 
@@ -66,7 +66,7 @@ pub const @"GET /db/qos/:name" = struct {
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.QoSSingleResponse {
-        var filter = try ctx.pathIdToFilter("names", openapi.qos.query.Filter);
+        var filter = try ctx.pathIdToFilter("names", components.query.Filter);
         filter.flags = ctx.parameters.query;
 
         const resp = try slurm.db.qos.load(ctx.db_conn, filter);

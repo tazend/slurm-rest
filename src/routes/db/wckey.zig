@@ -66,7 +66,7 @@ pub const @"GET /db/wckeys/:id" = struct {
     };
 
     pub fn handle(ctx: *const RouteData(@This())) !models.WCKeyResponse {
-        const names_filter = try ctx.pathIdToFilter("id", openapi.wckey.query.FilterMany);
+        const names_filter = try ctx.pathIdToFilter("id", components.query.FilterMany);
         var filter = ctx.parameters.query;
         filter.id_list = names_filter.id_list;
 

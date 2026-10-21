@@ -7,8 +7,36 @@ const SchemaComponent = openapi.SchemaComponent;
 
 pub const AssociationsShort: SchemaComponent = .array(AssociationShort, .assocs_short);
 pub const Associations:      SchemaComponent = .array(Association, .list);
-pub const AssociationsResponse = openapi.GenericResponse(Associations, "List of Associations");
-pub const AssociationResponse = openapi.GenericResponse(Association, "Database Association Information");
+
+pub const AssociationsResponse: SchemaComponent = .{
+    .api_type = models.AssociationsResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "associations",
+            .description = "List of Associations",
+            .ref = Associations,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = Associations,
+};
+
+pub const AssociationResponse: SchemaComponent = .{
+    .api_type = models.AssociationResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "association",
+            .description = "Association Information",
+            .ref = Association,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = Association,
+};
 
 pub const AssociationShort: SchemaComponent = .{
     .api_type = models.AssociationShort,

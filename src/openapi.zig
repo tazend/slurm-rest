@@ -42,12 +42,18 @@ pub const SchemaComponent = struct {
         inline for (comps) |component_decl| {
             const comp = @field(components, component_decl.name);
 
-            const decls = @typeInfo(comp).@"struct".decls;
-            inline for (decls) |decl| {
-                const field = @field(comp, decl.name);
-                if (@TypeOf(field) == SchemaComponent) {
-                    if (std.meta.eql(self, field)) return decl.name;
+            if (@TypeOf(comp) == type and @typeInfo(comp) == .@"struct") {
+                const decls = @typeInfo(comp).@"struct".decls;
+                inline for (decls) |decl| {
+                    const field = @field(comp, decl.name);
+                    if (@TypeOf(field) == SchemaComponent) {
+                        if (std.meta.eql(self, field)) return decl.name;
+                    }
                 }
+            }
+
+            if (@TypeOf(comp) == SchemaComponent) {
+                if (std.meta.eql(self, comp)) return component_decl.name;
             }
         }
 

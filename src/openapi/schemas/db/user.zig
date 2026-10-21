@@ -7,8 +7,36 @@ const SchemaComponent = openapi.SchemaComponent;
 
 pub const Users: SchemaComponent = .array(User, .list);
 pub const UsersUpdatable: SchemaComponent = .array(UserUpdatable, .list);
-pub const UsersResponse = openapi.GenericResponse(Users, "List of Database Users");
-pub const UserResponse = openapi.GenericResponse(User, "Database User Information");
+
+pub const UsersResponse: SchemaComponent = .{
+    .api_type = models.UsersResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "users",
+            .description = "List of Users",
+            .ref = Users,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = Users,
+};
+
+pub const UserResponse: SchemaComponent = .{
+    .api_type = models.UserResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "user",
+            .description = "User Information",
+            .ref = User,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = User,
+};
 
 pub const UserUpdatable: SchemaComponent = .{
     .api_type = slurm.db.User,

@@ -164,7 +164,7 @@ pub fn assocsShort(self: *Parser) !*slurm.db.List(*slurm.db.Association) {
         const T = baseType(@TypeOf(list)).ItemType;
         const TBase = baseType(T);
         const item: T = try self.slurm_arena.allocator().create(TBase);
-        const assoc_short = try self.parseSchema(openapi.AssociationShort);
+        const assoc_short = try self.parseSchema(openapi.components.assoc.AssociationShort);
         item.* = .{};
         item.acct = assoc_short.account;
         item.cluster = assoc_short.cluster;

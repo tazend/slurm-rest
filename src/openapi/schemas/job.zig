@@ -6,7 +6,21 @@ const SchemaComponent = openapi.SchemaComponent;
 const models = openapi.models;
 
 pub const Jobs: SchemaComponent = .array(Job, .load_response);
-pub const JobResponse = openapi.GenericResponse(Job, "Job information");
+
+pub const JobResponse: SchemaComponent = .{
+    .api_type = models.JobResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "job",
+            .description = "Job Information",
+            .ref = Job,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = Job,
+};
 
 pub const JobScriptResponse: SchemaComponent = .{
     .api_type = models.JobScriptResponse,

@@ -55,8 +55,36 @@ pub const Account: SchemaComponent = .{
 };
 
 pub const Accounts: SchemaComponent = .array(Account, .list);
-pub const AccountsResponse = openapi.GenericResponse(Accounts, "List of Accounts");
-pub const AccountResponse = openapi.GenericResponse(Account, "Database Account Information");
+
+pub const AccountsResponse: SchemaComponent = .{
+    .api_type = models.AccountsResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "accounts",
+            .description = "List of Accounts",
+            .ref = Accounts,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = Accounts,
+};
+
+pub const AccountResponse: SchemaComponent = .{
+    .api_type = models.AccountSingleResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "account",
+            .description = "Account Information",
+            .ref = Account,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = Account,
+};
 
 pub const query = struct {
     pub const Accounts: openapi.QueryParameterComponent = .{

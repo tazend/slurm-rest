@@ -41,7 +41,7 @@ pub const @"GET /db/jobs" = struct {
         slurm.c.slurmdb_job_cond_def_start_end(&ctx.parameters.query);
         const jobs = try slurm.db.job.load(ctx.db_conn, ctx.parameters.query);
         defer jobs.deinit();
-        return .{ .data = try dump(ctx.arena, jobs, openapi.DBJobs)};
+        return .{ .data = try ctx.dumpData(jobs)};
     }
 };
 
@@ -59,7 +59,7 @@ pub const @"GET /db/jobs/:id" = struct {
             .description = "TODO",
         },
         .parameters = .{
-            .path = components.openapi.job.path.IDParameter,
+            .path = openapi.components.job.path.IDParameter,
             .query = components.query.FilterSingle,
         },
         .requirements = .{
@@ -71,7 +71,7 @@ pub const @"GET /db/jobs/:id" = struct {
         slurm.c.slurmdb_job_cond_def_start_end(&ctx.parameters.query);
         const job = try slurm.db.job.loadOneWithFilter(ctx.db_conn, ctx.parameters.path.id, ctx.parameters.query);
         defer job.deinit();
-        return .{ .data = try dump(ctx.arena, job, openapi.DBJob)};
+        return .{ .data = try ctx.dumpData(job)};
     }
 };
 

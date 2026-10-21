@@ -6,7 +6,21 @@ const SchemaComponent = openapi.SchemaComponent;
 const models = openapi.models;
 
 pub const Nodes:             SchemaComponent = .array(Node, .load_response);
-pub const NodeResponse =         openapi.GenericResponse(Node, "Node information");
+
+pub const NodeResponse: SchemaComponent = .{
+    .api_type = models.NodeResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "node",
+            .description = "Node Information",
+            .ref = Node,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = Node,
+};
 
 pub const NodesResponse: SchemaComponent = .{
     .child = Nodes,

@@ -39,7 +39,7 @@ pub const @"GET /db/users" = struct {
     pub fn handle(ctx: *const RouteData(@This())) !models.UsersResponse {
         const resp = try slurm.db.user.load(ctx.db_conn, ctx.parameters.query);
         defer resp.deinit();
-        return .{ .data = try dump(ctx.arena, resp, openapi.Users)};
+        return .{ .data = try ctx.dumpData(resp)};
     }
 };
 
@@ -66,7 +66,7 @@ pub const @"GET /db/users/:name" = struct {
 
     pub fn handle(ctx: *const RouteData(@This())) !models.UserResponse {
         // TODO: make sure to free all lists
-        const names_filter = try ctx.pathIdToFilter("names", openapi.user.query.FilterMany);
+        const names_filter = try ctx.pathIdToFilter("names", components.query.FilterMany);
         var filter = ctx.parameters.query;
         filter.assoc_cond = names_filter.assoc_cond;
 

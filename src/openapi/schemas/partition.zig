@@ -28,7 +28,7 @@ pub const PartitionResponse = openapi.GenericResponse(
 pub const PartitionsResponse: SchemaComponent = .{
     .child = Partitions,
     .api_type = models.PartitionsResponse,
-    .properties = &.{
+    .properties = [_]Property{
         .{
             .name = "last_update",
             .description = "Time of last update of this data",

@@ -5,8 +5,36 @@ const Property = openapi.Property;
 const SchemaComponent = openapi.SchemaComponent;
 
 pub const WCKeys: SchemaComponent = .array(WCKey, .list);
-pub const WCKeysResponse = openapi.GenericResponse(WCKeys, "List of Database WCKeys");
-pub const WCKeyResponse = openapi.GenericResponse(WCKey, "List of Database WCKey");
+
+pub const WCKeyResponse: SchemaComponent = .{
+    .api_type = models.WCKeyResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "steps",
+            .description = "WCKey Information",
+            .ref = WCKey,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = WCKey,
+};
+
+pub const WCKeysResponse: SchemaComponent = .{
+    .api_type = models.WCKeysResponse,
+    .properties = [_]Property{
+        .{
+            .api_name = "data",
+            .name = "steps",
+            .description = "List of WCKeys",
+            .ref = WCKeys,
+            .serde = .string(.print),
+        },
+    } ++ openapi.components.BaseResponseProperties,
+    .serde = .object(.container),
+    .child = WCKeys,
+};
 
 pub const WCKey: SchemaComponent = .{
     .api_type = slurm.db.WCKey,
