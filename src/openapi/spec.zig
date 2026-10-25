@@ -180,6 +180,60 @@ const Spec = struct {
         try self.json.endObject();
     }
 
+    pub fn renderChildRef(self: *Spec, child: openapi.SchemaComponent) !void {
+        try self.json.objectField("items");
+        try self.json.beginObject();
+        try self.json.objectField("$ref");
+        try self.json.write("#/components/schema/" ++ comptime child.getName2());
+        try self.json.endObject();
+    }
+
+    pub fn renderPropertyEnum(self: *Spec, prop: openapi.Property, schema: openapi.SchemaComponent) !void {
+        if (prop.serde.json_type == .array) {
+            try self.json.objectField("items");
+            try self.json.beginObject();
+            try self.json.objectField("type");
+            try self.json.write(prop.serde.json_array_type);
+        }
+        try self.json.objectField("enum");
+        try self.json.beginArray();
+        const api_type = if (schema.child) |c| c.api_type else schema.api_type;
+        const ItemType = @FieldType(api_type, prop.api_name orelse prop.name);
+        inline for (std.meta.fields(ItemType)) |f| {
+            @setEvalBranchQuota(5000);
+            if (!std.mem.startsWith(u8, f.name, "_")) try self.json.write(f.name);
+        }
+        try self.json.endArray();
+
+        if (prop.serde.json_type == .array) try self.json.endObject();
+    }
+
+    pub fn renderProperties(self: *Spec, schema: openapi.SchemaComponent) !void {
+        try self.json.objectField("properties");
+        try self.json.beginObject();
+        inline for (schema.properties) |prop| {
+            try self.json.objectField(prop.name);
+            try self.json.beginObject();
+
+            if (prop.ref) |ref| {
+                if (prop.serde.json_type == .array) {
+                    try self.renderChildRef(ref.getChild());
+                } else {
+                    try self.json.objectField("$ref");
+                    try self.json.write("#/components/schema/" ++ comptime ref.getName2());
+                }
+            } else {
+                try self.json.objectField("type");
+                try self.json.write(prop.serde.json_type);
+                try self.json.objectField("description");
+                try self.json.write(prop.description);
+
+                if (prop.serde.is_enum) try self.renderPropertyEnum(prop, schema);
+            }
+            try self.json.endObject();
+        }
+        try self.json.endObject();
+    }
 
     pub fn processOneSchema(self: *Spec, comptime name: [:0]const u8, schema: openapi.SchemaComponent) !void {
         try self.json.objectField(name);
@@ -188,44 +242,11 @@ const Spec = struct {
         try self.json.objectField("type");
         try self.json.write(schema.serde.json_type);
 
-        try self.json.objectField("properties");
-        try self.json.beginObject();
-        inline for (schema.properties) |prop| {
-            try self.json.objectField(prop.name);
-            try self.json.beginObject();
-
-            if (prop.ref) |ref| {
-                try self.json.objectField("$ref");
-                try self.json.write("#/components/schema/" ++ comptime ref.getName2());
-            } else {
-                try self.json.objectField("type");
-                try self.json.write(prop.serde.json_type);
-                try self.json.objectField("description");
-                try self.json.write(prop.description);
-
-                if (prop.serde.is_enum) {
-                    if (prop.serde.json_type == .array) {
-                        try self.json.objectField("items");
-                        try self.json.beginObject();
-                        try self.json.objectField("type");
-                        try self.json.write(prop.serde.json_array_type);
-                    }
-                    try self.json.objectField("enum");
-                    try self.json.beginArray();
-                    const ItemType = @FieldType(schema.api_type, prop.api_name orelse prop.name);
-                    inline for (std.meta.fields(ItemType)) |f| {
-                        @setEvalBranchQuota(5000);
-                        if (!std.mem.startsWith(u8, f.name, "_")) try self.json.write(f.name);
-                    }
-                    try self.json.endArray();
-
-                    if (prop.serde.json_type == .array) try self.json.endObject();
-                }
-            }
-            try self.json.endObject();
+        switch (schema.serde.json_type) {
+            .array => try self.renderChildRef(schema.getChild()),
+            .object => try self.renderProperties(schema),
+            else => |j| @compileError("Cannot render Type " ++ @tagName(j)),
         }
-        try self.json.endObject();
-
         try self.json.endObject();
     }
 
@@ -235,11 +256,22 @@ const Spec = struct {
         try self.json.objectField("schemas");
         try self.json.beginObject();
 
-        const decls = @typeInfo(openapi).@"struct".decls;
-        inline for (decls) |decl| {
-            const field = @field(openapi, decl.name);
-            if (@TypeOf(field) == openapi.SchemaComponent) {
-                try self.processOneSchema(decl.name, field);
+        const comps = @typeInfo(openapi.components).@"struct".decls;
+        inline for (comps) |component_decl| {
+            const comp = @field(openapi.components, component_decl.name);
+
+            if (@TypeOf(comp) == type and @typeInfo(comp) == .@"struct") {
+                const decls = @typeInfo(comp).@"struct".decls;
+                inline for (decls) |decl| {
+                    const field = @field(comp, decl.name);
+                    if (@TypeOf(field) == openapi.SchemaComponent) {
+                        try self.processOneSchema(decl.name, field);
+                    }
+                }
+            }
+
+            if (@TypeOf(comp) == openapi.SchemaComponent) {
+                try self.processOneSchema(component_decl.name, comp);
             }
         }
 
