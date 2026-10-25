@@ -14,9 +14,9 @@ const components = openapi.components.job;
 pub const routes = &.{
     @"GET /jobs",
     @"GET /jobs/:id",
+    @"DELETE /jobs/:id",
     @"GET /jobs/:id/steps",
     @"GET /jobs/:id/script",
-    @"DELETE /jobs/:id",
 };
 
 pub const @"GET /jobs" = struct {

@@ -12,8 +12,8 @@ const components = openapi.components.user;
 
 pub const routes = &.{
     @"GET /db/users",
-    @"GET /db/users/:name",
     @"POST /db/users",
+    @"GET /db/users/:name",
 };
 
 pub const @"GET /db/users" = struct {

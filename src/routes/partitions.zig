@@ -13,9 +13,9 @@ const components = openapi.components.part;
 
 pub const routes = &.{
     @"GET /partitions",
+    @"POST /partitions",
     @"GET /partitions/:name",
     @"POST /partitions/:name",
-    @"POST /partitions",
 };
 
 pub const @"GET /partitions" = struct {

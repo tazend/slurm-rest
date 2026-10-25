@@ -13,10 +13,10 @@ const components = openapi.components.reservation;
 
 pub const routes = &.{
     @"GET /reservations",
+    @"POST /reservations",
     @"GET /reservations/:name",
     @"DELETE /reservations/:name",
     @"POST /reservations/:name",
-    @"POST /reservations",
     @"PUT /reservations/:name",
 };
 
