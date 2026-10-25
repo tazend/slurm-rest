@@ -3,7 +3,6 @@ const route = @import("../route.zig");
 const categories = route.route_categories;
 const Stringify = std.json.Stringify;
 const Allocator = std.mem.Allocator;
-const node_routes = @import("../routes/nodes.zig");
 const openapi = @import("../openapi.zig");
 
 pub const SpecReal = struct {
@@ -159,23 +158,25 @@ const Spec = struct {
         try self.json.objectField("paths");
         try self.json.beginObject();
 
-        var seen: std.StringHashMapUnmanaged(void) = .empty;
-        defer seen.deinit(self.allocator);
+        inline for (route.route_categories) |category| {
+            var seen: std.StringHashMapUnmanaged(void) = .empty;
+            defer seen.deinit(self.allocator);
 
-        inline for (node_routes.routes, 1..) |r, i| {
-            const desc: route.Description = comptime .init(@typeName(r));
+            inline for (category.routes, 1..) |r, i| {
+                const desc: route.Description = comptime .init(@typeName(r));
 
-            const result = try seen.getOrPut(self.allocator, desc.name);
-            if (!result.found_existing) {
-                if (i > 1) try self.json.endObject();
-                try self.json.objectField(desc.name);
-                try self.json.beginObject();
+                const result = try seen.getOrPut(self.allocator, desc.name);
+                if (!result.found_existing) {
+                    if (i > 1) try self.json.endObject();
+                    try self.json.objectField(desc.name);
+                    try self.json.beginObject();
+                }
+
+                try self.json.objectField(desc.method);
+                try self.processRouteMeta(r.Meta);
+
+                if (i == category.routes.len) try self.json.endObject();
             }
-
-            try self.json.objectField(desc.method);
-            try self.processRouteMeta(r.Meta);
-
-            if (i == node_routes.routes.len) try self.json.endObject();
         }
         try self.json.endObject();
     }
